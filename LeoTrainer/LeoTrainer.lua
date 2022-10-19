@@ -113,16 +113,18 @@ function LeoTrainer.stationEnter(craftSkill)
 end
 
 function LeoTrainer.stationExit(_, craftSkill)
-    EVENT_MANAGER:UnregisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED)
-    if WritCreater then
-        EVENT_MANAGER:UnregisterForEvent(WritCreater.name, EVENT_CRAFTING_STATION_INTERACT)
-        EVENT_MANAGER:UnregisterForEvent(WritCreater.name, EVENT_CRAFT_COMPLETED)
-    end
+	if craftSkill > 0 then
+		EVENT_MANAGER:UnregisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED)
+		if WritCreater then
+			EVENT_MANAGER:UnregisterForEvent(WritCreater.name, EVENT_CRAFTING_STATION_INTERACT)
+			EVENT_MANAGER:UnregisterForEvent(WritCreater.name, EVENT_CRAFT_COMPLETED)
+		end
 
-    LeoTrainer.ui.OnStationExit(craftSkill)
-    LeoTrainer.research.OnStationExit(craftSkill)
-    LeoTrainer.deconstruct.OnStationExit(craftSkill)
-    LeoTrainer.craft.OnStationExit(craftSkill)
+		LeoTrainer.ui.OnStationExit(craftSkill)
+		LeoTrainer.research.OnStationExit(craftSkill)
+		LeoTrainer.deconstruct.OnStationExit(craftSkill)
+		LeoTrainer.craft.OnStationExit(craftSkill)
+	end
 end
 
 local craftSkillsBySound = {
