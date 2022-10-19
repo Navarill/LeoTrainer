@@ -1,6 +1,6 @@
 ## Title: Leo's Trainer
-## APIVersion: 100035
-## Version: 2.2.3
+## APIVersion: 101035 101036
+## Version: 2.2.3.N1
 ## AddOnVersion: 223
 ## Author: |c39B027@LeandroSilva|r
 ## SavedVariables: LeoTrainer_Settings LeoTrainer_Data
