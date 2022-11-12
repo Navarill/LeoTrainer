@@ -5,7 +5,7 @@
 ## Author: |c39B027@LeandroSilva|r
 ## SavedVariables: LeoTrainer_Settings LeoTrainer_Data
 ## OptionalDependsOn: FCOItemSaver PersonalAssistant DolgubonsLazyWritCreator
-## DependsOn: LeoAltholic LibLazyCrafting LibFeedback LibAddonMenu-2.0 LibSavedVars
+## DependsOn: LeoAltholic LibLazyCrafting LibFeedback LibAddonMenu-2.0>=28 LibSavedVars
 
 LeoTrainerConst.lua
 LeoTrainer.lua
