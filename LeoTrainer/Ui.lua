@@ -85,13 +85,6 @@ function LeoTrainer.ui.OnStationExit(craftSkill)
 end
 
 function LeoTrainer.ui.Initialize()
-    local showButton, feedbackWindow = LibFeedback:initializeFeedbackWindow(LeoTrainer,
-        LeoTrainer.name,LeoTrainerWindow, "@LeandroSilva",
-        {TOPRIGHT, LeoTrainerWindow, TOPRIGHT,-50,3},
-        {0,1000,10000,"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Y9KM4PZU2UZ6A"},
-        "If you found a bug, have a request or a suggestion, or simply wish to donate, send a mail.")
-    LeoTrainer.feedback = feedbackWindow
-    LeoTrainer.feedback:SetDrawTier(DT_MEDIUM)
 
     LeoTrainerWindowTitle:SetText(LeoTrainer.displayName .. " v" .. LeoTrainer.version)
 
