@@ -1,5 +1,5 @@
 ## Title: Leo's Trainer
-## APIVersion: 101040
+## APIVersion: 101040 101041
 ## Version: 2.2.3
 ## AddOnVersion: 223
 ## Author: LeandroSilva
