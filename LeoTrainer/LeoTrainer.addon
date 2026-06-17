@@ -2,9 +2,9 @@
 ## Author: LeandroSilva
 ## Version: 2.2.3
 ## AddOnVersion: 223
-## APIVersion: 101047 101048
-## DependsOn: LeoAltholic>=1900 LibLazyCrafting>=4028 LibAddonMenu-2.0>=40 LibSavedVars>=60007
-## OptionalDependsOn: FCOItemSaver>=274 PersonalAssistant>=20250808 DolgubonsLazyWritCreator>=4036
+## APIVersion: 101050 101051
+## DependsOn: LeoAltholic>=1900 LibLazyCrafting>=4039 LibAddonMenu-2.0>=43 LibSavedVars>=60007
+## OptionalDependsOn: FCOItemSaver>=283 PersonalAssistant>=20260527 DolgubonsLazyWritCreator>=4057
 ## SavedVariables: LeoTrainer_Settings LeoTrainer_Data
 
 LeoTrainerConst.lua
