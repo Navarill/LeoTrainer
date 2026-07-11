@@ -4,7 +4,7 @@
 ## AddOnVersion: 223
 ## APIVersion: 101050 101051
 ## DependsOn: LeoAltholic>=1900 LibLazyCrafting>=4039 LibAddonMenu-2.0>=43 LibSavedVars>=60007
-## OptionalDependsOn: FCOItemSaver>=283 PersonalAssistant>=20260527 DolgubonsLazyWritCreator>=4057
+## OptionalDependsOn: FCOItemSaver PersonalAssistant DolgubonsLazyWritCreator
 ## SavedVariables: LeoTrainer_Settings LeoTrainer_Data
 
 LeoTrainerConst.lua
