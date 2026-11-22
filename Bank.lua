@@ -13,6 +13,15 @@ local attemptToken = 0
 local retryCount = 0
 local isDepositing = false
 
+local function MoveItemToBank(sourceBag, sourceSlot, targetBag, targetSlot, stackCount)
+    if IsProtectedFunction("RequestMoveItem") then
+        return CallSecureProtected("RequestMoveItem", sourceBag, sourceSlot, targetBag, targetSlot, stackCount)
+    else
+        RequestMoveItem(sourceBag, sourceSlot, targetBag, targetSlot, stackCount)
+        return true
+    end
+end
+
 local function CleanupDeposit()
     isDepositing = false
     depositQueue = {}
@@ -50,6 +59,7 @@ local function OnSlotUpdated(_, bagId, slotIndex)
     if not entry or bagId ~= entry.sourceBag or slotIndex ~= entry.sourceSlot then return end
 
     if GetItemId(entry.sourceBag, entry.sourceSlot) == 0 then
+        LeoTrainer.log("Depositing " .. (entry.itemLink or "item"))
         attemptToken = attemptToken + 1
         retryCount = 0
         currentIndex = currentIndex + 1
@@ -82,11 +92,7 @@ ProcessNextDeposit = function()
     attemptToken = attemptToken + 1
     local currentToken = attemptToken
 
-    if LeoTrainer.settings and LeoTrainer.settings.debug then
-        LeoTrainer.log("Depositing " .. (entry.itemLink or "item") .. " to bank slot " .. targetSlot)
-    end
-
-    RequestMoveItem(entry.sourceBag, entry.sourceSlot, targetBag, targetSlot, entry.stackCount)
+    MoveItemToBank(entry.sourceBag, entry.sourceSlot, targetBag, targetSlot, entry.stackCount)
 
     zo_callLater(function()
         if not isDepositing or attemptToken ~= currentToken then return end
@@ -119,21 +125,39 @@ function Bank.StartDepositQueue(itemsToDeposit)
     ProcessNextDeposit()
 end
 
+local function IsTraitNeededByAnyCharacter(craftSkill, line, trait)
+    if not LeoTrainer.missingKnowledge then
+        if LeoTrainer.research and LeoTrainer.research.Initialize then
+            LeoTrainer.research.Initialize()
+        else
+            return false
+        end
+    end
+
+    local missing = LeoTrainer.missingKnowledge[craftSkill]
+        and LeoTrainer.missingKnowledge[craftSkill][line]
+        and LeoTrainer.missingKnowledge[craftSkill][line][trait]
+
+    return missing ~= nil and #missing > 0
+end
+
 function Bank.OnOpenBank()
     if not LeoTrainer.settings or not LeoTrainer.settings.bank or not LeoTrainer.settings.bank.autoDeposit then
         return
     end
+
+    if not LeoTrainer.research then return end
 
     local items = {}
     local bagSize = GetBagSize(BAG_BACKPACK)
 
     for slotIndex = 0, bagSize - 1 do
         if GetItemId(BAG_BACKPACK, slotIndex) ~= 0 then
-            local itemLink = GetItemLink(BAG_BACKPACK, slotIndex)
-            local craftSkill = LeoTrainer.ItemLinkToCraftskill(itemLink)
+            local itemLink = GetItemLink(BAG_BACKPACK, slotIndex, LINK_STYLE_BRACKETS)
+            local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
 
-            if craftSkill > 0 and LeoTrainer.Research and LeoTrainer.Research.CanItemBeResearched(BAG_BACKPACK, slotIndex, itemLink, craftSkill) then
-                if LeoTrainer.IsTraitNeededByAnyCharacter and LeoTrainer.IsTraitNeededByAnyCharacter(itemLink, craftSkill) then
+            if craftSkill and LeoTrainer.research.CanItemBeResearched(BAG_BACKPACK, slotIndex, itemLink, craftSkill) then
+                if IsTraitNeededByAnyCharacter(craftSkill, line, trait) then
                     local _, stackCount = GetItemInfo(BAG_BACKPACK, slotIndex)
                     items[#items + 1] = {
                         sourceBag = BAG_BACKPACK,
