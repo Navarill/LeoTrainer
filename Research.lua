@@ -1,4 +1,3 @@
-
 local Research = {
     queue = {},
     isResearching = false,
@@ -7,84 +6,94 @@ local Research = {
         {
             name = "Research",
             keybind = "LEOTRAINER_RESEARCH",
-            callback = function() LeoTrainer.research.ResearchNext() end--,
+            callback = function() LeoTrainer.research.ResearchNext() end,
         },
         alignment = KEYBIND_STRIP_ALIGN_CENTER,
     }
 }
 
+local function resolveTraitIndex(craftSkill, line, itemTraitType)
+    if not craftSkill or not line or not itemTraitType then return nil end
+    local _, _, numTraits = GetSmithingResearchLineInfo(craftSkill, line)
+    for traitIndex = 1, numTraits do
+        if GetSmithingResearchLineTraitInfo(craftSkill, line, traitIndex) == itemTraitType then
+            return traitIndex
+        end
+    end
+    return nil
+end
+
 function Research.GetResearchData(link)
     if not link then return false end
 
     local craftSkill, line
-    local trait = GetItemLinkTraitInfo(link)
+    local traitType = GetItemLinkTraitInfo(link)
     local equipType = GetItemLinkEquipType(link)
 
-    if trait == ITEM_TRAIT_TYPE_NONE or trait == ITEM_TRAIT_TYPE_ARMOR_INTRICATE or trait == ITEM_TRAIT_TYPE_ARMOR_ORNATE
-        or trait == ITEM_TRAIT_TYPE_WEAPON_INTRICATE or trait == ITEM_TRAIT_TYPE_WEAPON_ORNATE
-        or trait == ITEM_TRAIT_TYPE_JEWELRY_INTRICATE or trait == ITEM_TRAIT_TYPE_JEWELRY_ORNATE then return false end
+    if traitType == ITEM_TRAIT_TYPE_NONE
+        or traitType == ITEM_TRAIT_TYPE_ARMOR_INTRICATE or traitType == ITEM_TRAIT_TYPE_ARMOR_ORNATE
+        or traitType == ITEM_TRAIT_TYPE_WEAPON_INTRICATE or traitType == ITEM_TRAIT_TYPE_WEAPON_ORNATE
+        or traitType == ITEM_TRAIT_TYPE_JEWELRY_INTRICATE or traitType == ITEM_TRAIT_TYPE_JEWELRY_ORNATE then
+        return false
+    end
 
     local armorType = GetItemLinkArmorType(link)
     local weaponType = GetItemLinkWeaponType(link)
-    if trait == ITEM_TRAIT_TYPE_ARMOR_NIRNHONED then trait = 19 end
-    if trait == ITEM_TRAIT_TYPE_WEAPON_NIRNHONED then trait = 9 end
-    if weaponType == WEAPONTYPE_AXE then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 1;
-    elseif weaponType == WEAPONTYPE_HAMMER then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 2;
+
+    if weaponType == WEAPONTYPE_AXE then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 1
+    elseif weaponType == WEAPONTYPE_HAMMER then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 2
     elseif weaponType == WEAPONTYPE_SWORD then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 3
-    elseif weaponType == WEAPONTYPE_TWO_HANDED_AXE then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 4;
-    elseif weaponType == WEAPONTYPE_TWO_HANDED_HAMMER then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 5;
-    elseif weaponType == WEAPONTYPE_TWO_HANDED_SWORD then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 6;
-    elseif weaponType == WEAPONTYPE_DAGGER then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 7;
-    elseif weaponType == WEAPONTYPE_BOW then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 1;
-    elseif weaponType == WEAPONTYPE_FIRE_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 2;
-    elseif weaponType == WEAPONTYPE_FROST_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 3;
-    elseif weaponType == WEAPONTYPE_LIGHTNING_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 4;
-    elseif weaponType == WEAPONTYPE_HEALING_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 5;
-    elseif weaponType == WEAPONTYPE_SHIELD then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 6;trait=trait-10;
-    elseif equipType == EQUIP_TYPE_CHEST then line = 1
-    elseif equipType == EQUIP_TYPE_FEET then line = 2
-    elseif equipType == EQUIP_TYPE_HAND then line = 3
-    elseif equipType == EQUIP_TYPE_HEAD then line = 4
-    elseif equipType == EQUIP_TYPE_LEGS then line = 5
-    elseif equipType == EQUIP_TYPE_SHOULDERS then line = 6
-    elseif equipType == EQUIP_TYPE_WAIST then line = 7
+    elseif weaponType == WEAPONTYPE_TWO_HANDED_AXE then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 4
+    elseif weaponType == WEAPONTYPE_TWO_HANDED_HAMMER then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 5
+    elseif weaponType == WEAPONTYPE_TWO_HANDED_SWORD then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 6
+    elseif weaponType == WEAPONTYPE_DAGGER then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = 7
+    elseif weaponType == WEAPONTYPE_BOW then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 1
+    elseif weaponType == WEAPONTYPE_FIRE_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 2
+    elseif weaponType == WEAPONTYPE_FROST_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 3
+    elseif weaponType == WEAPONTYPE_LIGHTNING_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 4
+    elseif weaponType == WEAPONTYPE_HEALING_STAFF then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 5
+    elseif weaponType == WEAPONTYPE_SHIELD then craftSkill = CRAFTING_TYPE_WOODWORKING; line = 6
+    elseif equipType == EQUIP_TYPE_NECK then craftSkill = CRAFTING_TYPE_JEWELRYCRAFTING; line = 1
+    elseif equipType == EQUIP_TYPE_RING then craftSkill = CRAFTING_TYPE_JEWELRYCRAFTING; line = 2
+    else
+        local armorLine
+        if equipType == EQUIP_TYPE_CHEST then armorLine = 1
+        elseif equipType == EQUIP_TYPE_FEET then armorLine = 2
+        elseif equipType == EQUIP_TYPE_HAND then armorLine = 3
+        elseif equipType == EQUIP_TYPE_HEAD then armorLine = 4
+        elseif equipType == EQUIP_TYPE_LEGS then armorLine = 5
+        elseif equipType == EQUIP_TYPE_SHOULDERS then armorLine = 6
+        elseif equipType == EQUIP_TYPE_WAIST then armorLine = 7
+        end
+
+        if armorLine then
+            if armorType == ARMORTYPE_HEAVY then
+                craftSkill = CRAFTING_TYPE_BLACKSMITHING
+                line = armorLine + 7
+            elseif armorType == ARMORTYPE_MEDIUM then
+                craftSkill = CRAFTING_TYPE_CLOTHIER
+                line = armorLine + 7
+            elseif armorType == ARMORTYPE_LIGHT then
+                craftSkill = CRAFTING_TYPE_CLOTHIER
+                line = armorLine
+            end
+        end
     end
 
-    if equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING then
-        craftSkill = CRAFTING_TYPE_JEWELRYCRAFTING
-        line = equipType == EQUIP_TYPE_NECK and 1 or 2
-        if trait == ITEM_TRAIT_TYPE_JEWELRY_ARCANE then trait = 1
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_HEALTHY then trait = 2
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_ROBUST then trait = 3
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_TRIUNE then trait = 4
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_INFUSED then trait = 5
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_PROTECTIVE then trait = 6
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_SWIFT then trait = 7
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_HARMONY then trait = 8
-        elseif trait == ITEM_TRAIT_TYPE_JEWELRY_BLOODTHIRSTY then trait = 9
-        end
-    else
-        if armorType == ARMORTYPE_HEAVY then craftSkill = CRAFTING_TYPE_BLACKSMITHING; line = line + 7; trait = trait - 10; end
-        if armorType == ARMORTYPE_MEDIUM then craftSkill = CRAFTING_TYPE_CLOTHIER; line = line + 7; trait = trait - 10; end
-        if armorType == ARMORTYPE_LIGHT then craftSkill = CRAFTING_TYPE_CLOTHIER; trait = trait - 10; end
+    local trait = resolveTraitIndex(craftSkill, line, traitType)
+    if craftSkill and line and trait then
+        return craftSkill, line, trait
     end
-    if craftSkill and line and trait then return craftSkill, line, trait
-    else return false end
+    return false
 end
 
 local function canIResearchItem(itemLink)
     local craftSkill, line, trait = Research.GetResearchData(itemLink)
 
-    if craftSkill == nil then return false end
+    if not craftSkill then return false end
 
     local isKnown, isResearching = LeoAltholic.ResearchStatus(craftSkill, line, trait)
-    if isKnown then
-        -- LeoTrainer.debug('already known')
-        return false
-    end
-
-    if isResearching then
-        -- LeoTrainer.debug('is researching')
+    if isKnown or isResearching then
         return false
     end
 
@@ -96,27 +105,23 @@ function Research.CanItemBeResearched(bagId, slotIndex, itemLink, craftSkill)
 
     if itemLink == nil then itemLink = GetItemLink(bagId, slotIndex) end
 
-    local type = GetItemType(bagId, slotIndex)
-    if type ~= ITEMTYPE_ARMOR and type ~= ITEMTYPE_WEAPON then return false end
+    local itemType = GetItemType(bagId, slotIndex)
+    if itemType ~= ITEMTYPE_ARMOR and itemType ~= ITEMTYPE_WEAPON then return false end
 
     if FCOIS.IsIconEnabled(FCOIS_CON_ICON_RESEARCH) and not FCOIS.IsMarked(bagId, slotIndex, FCOIS_CON_ICON_RESEARCH) then
-        -- LeoTrainer.debug(itemLink .. " not marked for research")
         return false
     end
 
-    if LeoTrainer.settings.research.allowCrafted and GetItemCreatorName(bagId, slotIndex) == nil then
-        -- LeoTrainer.debug(itemLink .. " not crafted")
+    if not LeoTrainer.settings.research.allowCrafted and GetItemCreatorName(bagId, slotIndex) ~= nil then
         return false
     end
 
-    local hasSet, setName = GetItemLinkSetInfo(itemLink)
+    local hasSet = GetItemLinkSetInfo(itemLink)
     if not LeoTrainer.settings.research.allowSets and hasSet then
-        -- LeoTrainer.debug(itemLink .. " is from set " .. setName)
         return false
     end
 
     if craftSkill ~= nil and craftSkill > 0 and LeoTrainer.settings.research.maxQuality[craftSkill] < GetItemQuality(bagId, slotIndex) then
-        -- LeoTrainer.debug(itemLink .. " is with higher quality")
         return false
     end
 
@@ -129,7 +134,7 @@ function Research.ScanBags()
     for _, data in pairs(items) do
         local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
         local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
-        if LeoTrainer.research.CanItemBeResearched(data.bagId, data.slotIndex, itemLink, craftSkill) then
+        if craftSkill and LeoTrainer.research.CanItemBeResearched(data.bagId, data.slotIndex, itemLink, craftSkill) then
             table.insert(list, {
                 bagId = data.bagId,
                 slotIndex = data.slotIndex,
@@ -145,8 +150,32 @@ function Research.ScanBags()
     return list
 end
 
-function Research.HandleItem(bagId, slotIndex, itemLink, craftSkill)
+function Research.ScanBagsUnfiltered()
+    local list = {}
+    local items = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK, BAG_BANK, BAG_SUBSCRIBER_BANK)
+    for _, data in pairs(items) do
+        local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
+        local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
+        if craftSkill then
+            local hasSet = GetItemLinkSetInfo(itemLink)
+            if LeoTrainer.settings.research.allowSets or not hasSet then
+                table.insert(list, {
+                    bagId = data.bagId,
+                    slotIndex = data.slotIndex,
+                    itemLink = itemLink,
+                    craftSkill = craftSkill,
+                    line = line,
+                    trait = trait,
+                    selected = false
+                })
+            end
+        end
+    end
 
+    return list
+end
+
+function Research.HandleItem(bagId, slotIndex, itemLink, craftSkill)
     local itemCraftSkill, line, trait = Research.GetResearchData(itemLink)
 
     if itemCraftSkill ~= craftSkill then return false end
@@ -182,7 +211,6 @@ function Research.OnResearchComplete(_, craftSkill)
         return
     end
 
-    local myName = GetUnitName("player")
     local researching, total = LeoAltholic.GetResearchCounters(craftSkill)
     for j, data in pairs(Research.queue) do
         if data.isResearching == true then
@@ -212,12 +240,6 @@ local function OnResearchTimeout(craftSkill)
         EVENT_MANAGER:UnregisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED)
         LeoTrainer.nextStage()
     end
-end
-
-local function get(tbl, k, ...)
-    if tbl == nil or tbl[k] == nil then return nil end
-    if select('#', ...) == 0 then return tbl[k] end
-    return get(tbl[k], ...)
 end
 
 local lineList
@@ -253,7 +275,6 @@ function Research.ResearchNext(craftSkill)
         return
     end
 
-    -- loop through the priority list and items to find a match
     if lineList == nil then lineList = LeoTrainer.GetPriorityLineList(myName, craftSkill) end
     for i, lineData in ipairs(lineList[myName][craftSkill]) do
         if not lineData.added and not lineData.isResearching then
@@ -270,7 +291,7 @@ function Research.ResearchNext(craftSkill)
                     LeoTrainer.log(message)
 
                     EVENT_MANAGER:RegisterForUpdate(LeoTrainer.name .. ".ResearchTimeout", 2000, OnResearchTimeout(craftSkill))
-                    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED, Research.OnResearchComplete) -- normal craft is handled by LLC
+                    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED, Research.OnResearchComplete)
 
                     Research.isResearching = true
                     Research.queue[j].isResearching = true
@@ -335,7 +356,7 @@ function Research.Initialize()
             LeoTrainer.data.fillSlot[char.bio.name][craftId] = LeoTrainer.data.fillSlot[char.bio.name][craftId] or false
         end
 
-        for _,craft in pairs(LeoAltholic.craftResearch) do
+        for _, craft in pairs(LeoAltholic.craftResearch) do
             if LeoTrainer.knowledge[craft] == nil then LeoTrainer.knowledge[craft] = {} end
             if LeoTrainer.missingKnowledge[craft] == nil then LeoTrainer.missingKnowledge[craft] = {} end
             for line = 1, GetNumSmithingResearchLines(craft) do
@@ -345,7 +366,7 @@ function Research.Initialize()
                 for trait = 1, numTraits do
                     if LeoTrainer.knowledge[craft][line][trait] == nil then LeoTrainer.knowledge[craft][line][trait] = {} end
                     if LeoTrainer.missingKnowledge[craft][line][trait] == nil then LeoTrainer.missingKnowledge[craft][line][trait] = {} end
-                    if char.research.done[craft][line][trait] == true then
+                    if LeoTrainer.IsTraitKnownOrFinished(char, craft, line, trait) then
                         table.insert(LeoTrainer.knowledge[craft][line][trait], char.bio.name)
                     else
                         table.insert(LeoTrainer.missingKnowledge[craft][line][trait], char.bio.name)

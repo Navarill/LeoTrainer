@@ -4,7 +4,7 @@
 			<Dimensions x="35" y="35"/>
 			<Textures normal="esoui/art/icons/crafting_researchscrolls_allprofessions.dds" />
 			<OnMouseEnter>LeoTrainer_Launcher_OnMouseEnter(self)</OnMouseEnter>
-			<OnMouseExit>ZO_Tooltips_HideTextTooltip()</OnMouseExit>
+			<OnMouseExit>ClearTooltip(InformationTooltip)</OnMouseExit>
 			<OnClicked>LeoTrainer_Launcher_OnMouseClicked(self)</OnClicked>
 		</Button>
 	</Controls>

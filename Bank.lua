@@ -1,110 +1,161 @@
+LeoTrainer = LeoTrainer or {}
+LeoTrainer.bank = LeoTrainer.bank or {}
+local Bank = LeoTrainer.bank
 
-local Bank = {
-    isClosed = true
-}
-local eventId, eventBag
+local EVENT_NAMESPACE = "LeoTrainer_BankDeposit"
+local MAX_RETRIES = 2
+local FALLBACK_TIMEOUT_MS = 750
 
-local function findFirstEmptyBankSlot()
-    local targetBagId = BAG_BANK
-    local targetSlotIndex = FindFirstEmptySlotInBag(targetBagId)
-    if targetSlotIndex == nil then
-        targetBagId = BAG_SUBSCRIBER_BANK
-        targetSlotIndex = FindFirstEmptySlotInBag(targetBagId)
+local depositQueue = {}
+local reservedSlots = {}
+local currentIndex = 0
+local attemptToken = 0
+local retryCount = 0
+local isDepositing = false
+
+local function CleanupDeposit()
+    isDepositing = false
+    depositQueue = {}
+    reservedSlots = {}
+    currentIndex = 0
+    attemptToken = attemptToken + 1
+    EVENT_MANAGER:UnregisterForEvent(EVENT_NAMESPACE, EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
+end
+
+local function FindNextFreeBankSlot()
+    local bagsToCheck = { BAG_BANK }
+    if IsESOPlusSubscriber() then
+        bagsToCheck[#bagsToCheck + 1] = BAG_SUBSCRIBER_BANK
     end
-    return targetBagId, targetSlotIndex
-end
 
-local function getUniqueUpdateIdentifier(bagId, slotIndex)
-    return table.concat({"LeoTrainerBank", tostring(bagId), tostring(slotIndex)})
-end
-
-local function disablePersonalAssistant()
-    if not PersonalAssistant then return end
-
-    -- Check if the Addon 'PABanking' is even enabled
-    local PAB = PersonalAssistant.Banking
-    if PAB then
-        -- Unregister PABanking completely
-        EVENT_MANAGER:UnregisterForEvent(PAB.AddonName, EVENT_OPEN_BANK, "OpenBank")
-        EVENT_MANAGER:UnregisterForEvent(PAB.AddonName, EVENT_CLOSE_BANK, "CloseBank")
-    end
-end
-
-local function runPersonalAssistant(eventId, bankBag)
-    if not PersonalAssistant then return end
-
-    -- Check if the Addon 'PABanking' is even enabled
-    local PAB = PersonalAssistant.Banking
-    if PAB then
-        -- Check if the functionality is turned on within the addon
-        local PABMenuFunctions = PersonalAssistant.MenuFunctions.PABanking
-        if PABMenuFunctions.getCurrenciesEnabledSetting() or PABMenuFunctions.getCraftingItemsEnabledSetting()
-                or PABMenuFunctions.getAdvancedItemsEnabledSetting() then
-            PAB.OnBankOpen(eventId, bankBag)
+    for _, targetBag in ipairs(bagsToCheck) do
+        local bagSize = GetBagSize(targetBag)
+        for slot = 0, bagSize - 1 do
+            local key = targetBag .. ":" .. slot
+            if not reservedSlots[key] and GetItemId(targetBag, slot) == 0 then
+                reservedSlots[key] = true
+                return targetBag, slot
+            end
         end
     end
+
+    return nil, nil
 end
 
-local function depositItems(items, startIndex)
-    local itemData = items[startIndex]
+local ProcessNextDeposit
 
-    local targetBagId, targetSlotIndex = findFirstEmptyBankSlot()
-    if targetBagId == nil or targetSlotIndex == nil then
-        LeoTrainer.log("Cannot deposit item. Bank full?")
-        runPersonalAssistant(eventId, eventBag)
+local function OnSlotUpdated(_, bagId, slotIndex)
+    if not isDepositing then return end
+    local entry = depositQueue[currentIndex]
+    if not entry or bagId ~= entry.sourceBag or slotIndex ~= entry.sourceSlot then return end
+
+    if GetItemId(entry.sourceBag, entry.sourceSlot) == 0 then
+        attemptToken = attemptToken + 1
+        retryCount = 0
+        currentIndex = currentIndex + 1
+        ProcessNextDeposit()
+    end
+end
+
+ProcessNextDeposit = function()
+    local entry = depositQueue[currentIndex]
+    if not entry then
+        CleanupDeposit()
         return
     end
-    if IsProtectedFunction("RequestMoveItem") then
-        CallSecureProtected("RequestMoveItem", BAG_BACKPACK, itemData.slotIndex, targetBagId, targetSlotIndex, 1)
-    else
-        RequestMoveItem(BAG_BACKPACK, itemData.slotIndex, targetBagId, targetSlotIndex, 1)
+
+    if GetItemId(entry.sourceBag, entry.sourceSlot) == 0 then
+        retryCount = 0
+        currentIndex = currentIndex + 1
+        ProcessNextDeposit()
+        return
     end
-    local identifier = getUniqueUpdateIdentifier(BAG_BACKPACK, itemData.slotIndex)
-    EVENT_MANAGER:RegisterForUpdate(identifier, 50, function()
-        local itemId = GetItemId(targetBagId, targetSlotIndex)
-        if itemId > 0 or Bank.isClosed then
-            EVENT_MANAGER:UnregisterForUpdate(identifier)
-            LeoTrainer.log("Deposited " .. itemData.itemLink)
-            if not Bank.isClosed then
-                local newIndex = startIndex + 1
-                if newIndex <= #items then
-                    depositItems(items, newIndex)
-                    return
+
+    local targetBag, targetSlot = FindNextFreeBankSlot()
+    if not targetBag or not targetSlot then
+        CleanupDeposit()
+        return
+    end
+
+    entry.targetBag = targetBag
+    entry.targetSlot = targetSlot
+    attemptToken = attemptToken + 1
+    local currentToken = attemptToken
+
+    if LeoTrainer.settings and LeoTrainer.settings.debug then
+        LeoTrainer.log("Depositing " .. (entry.itemLink or "item") .. " to bank slot " .. targetSlot)
+    end
+
+    RequestMoveItem(entry.sourceBag, entry.sourceSlot, targetBag, targetSlot, entry.stackCount)
+
+    zo_callLater(function()
+        if not isDepositing or attemptToken ~= currentToken then return end
+
+        reservedSlots[targetBag .. ":" .. targetSlot] = nil
+        retryCount = retryCount + 1
+
+        if retryCount <= MAX_RETRIES then
+            ProcessNextDeposit()
+        else
+            retryCount = 0
+            currentIndex = currentIndex + 1
+            ProcessNextDeposit()
+        end
+    end, FALLBACK_TIMEOUT_MS)
+end
+
+function Bank.StartDepositQueue(itemsToDeposit)
+    CleanupDeposit()
+    if not itemsToDeposit or #itemsToDeposit == 0 then return end
+
+    depositQueue = itemsToDeposit
+    currentIndex = 1
+    retryCount = 0
+    isDepositing = true
+
+    EVENT_MANAGER:RegisterForEvent(EVENT_NAMESPACE, EVENT_INVENTORY_SINGLE_SLOT_UPDATE, OnSlotUpdated)
+    EVENT_MANAGER:AddFilterForEvent(EVENT_NAMESPACE, EVENT_INVENTORY_SINGLE_SLOT_UPDATE, REGISTER_FILTER_BAG_ID, BAG_BACKPACK)
+
+    ProcessNextDeposit()
+end
+
+function Bank.OnOpenBank()
+    if not LeoTrainer.settings or not LeoTrainer.settings.bank or not LeoTrainer.settings.bank.autoDeposit then
+        return
+    end
+
+    local items = {}
+    local bagSize = GetBagSize(BAG_BACKPACK)
+
+    for slotIndex = 0, bagSize - 1 do
+        if GetItemId(BAG_BACKPACK, slotIndex) ~= 0 then
+            local itemLink = GetItemLink(BAG_BACKPACK, slotIndex)
+            local craftSkill = LeoTrainer.ItemLinkToCraftskill(itemLink)
+
+            if craftSkill > 0 and LeoTrainer.Research and LeoTrainer.Research.CanItemBeResearched(BAG_BACKPACK, slotIndex, itemLink, craftSkill) then
+                if LeoTrainer.IsTraitNeededByAnyCharacter and LeoTrainer.IsTraitNeededByAnyCharacter(itemLink, craftSkill) then
+                    local _, stackCount = GetItemInfo(BAG_BACKPACK, slotIndex)
+                    items[#items + 1] = {
+                        sourceBag = BAG_BACKPACK,
+                        sourceSlot = slotIndex,
+                        stackCount = stackCount or 1,
+                        itemLink = itemLink,
+                    }
                 end
             end
-            LeoTrainer.debug("Done depositing")
-            runPersonalAssistant(eventId, eventBag)
         end
-    end)
-end
-
-function Bank.OnOpenBank(event, bankBag)
-    eventId = event
-    eventBag = bankBag
-
-    if IsHouseBankBag(bankBag) then
-        runPersonalAssistant(eventId, eventBag)
-        return
     end
 
-    Bank.isClosed = false
-
-    if not LeoTrainer.settings.bank.autoDeposit then return end
-
-    local items = LeoTrainer.craft.ScanBackpackForCrafted()
     if #items > 0 then
-        depositItems(items, 1)
+        Bank.StartDepositQueue(items)
     end
 end
 
 function Bank.OnCloseBank()
-    Bank.isClosed = true
+    CleanupDeposit()
 end
 
 function Bank.Initialize()
-    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_OPEN_BANK, Bank.OnOpenBank)
-    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CLOSE_BANK, Bank.OnCloseBank)
-    disablePersonalAssistant()
+    EVENT_MANAGER:RegisterForEvent("LeoTrainer_Bank", EVENT_OPEN_BANK, Bank.OnOpenBank)
+    EVENT_MANAGER:RegisterForEvent("LeoTrainer_Bank", EVENT_CLOSE_BANK, Bank.OnCloseBank)
 end
-
-LeoTrainer.bank = Bank

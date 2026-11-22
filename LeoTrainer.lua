@@ -1,3 +1,4 @@
+local initialized = false
 
 function LeoTrainer.IsInUsableStation()
     local station = GetCraftingInteractionType()
@@ -22,7 +23,9 @@ function LeoTrainer.LLC_Completed(event, station, result)
 
     if result.Requester ~= LeoTrainer.name then return end
 
-    LeoTrainer.data.craftQueue[result.reference].crafted = true
+    if LeoTrainer.data.craftQueue[result.reference] then
+        LeoTrainer.data.craftQueue[result.reference].crafted = true
+    end
     LeoTrainer.ui.queueScroll:RefreshData()
 
     LeoTrainer.craft.MarkItem(result.bag, result.slot)
@@ -31,33 +34,6 @@ function LeoTrainer.LLC_Completed(event, station, result)
 
     LeoTrainer.debug("All crafts done at this station.")
     LeoTrainer.nextStage()
-end
-
-function LeoTrainer.OnCraftComplete(event, station)
-    EVENT_MANAGER:UnregisterForUpdate(LeoTrainer.name .. ".ResearchItemTimeout")
-
-    if LeoTrainer.research.isResearching then
-        local myName = GetUnitName("player")
-        local researching, total = LeoAltholic.GetResearchCounters(station)
-        table.remove(LeoTrainer.research.queue, 1)
-        LeoTrainer.research.isResearching = false
-        if #LeoTrainer.research.queue > 0 then
-            zo_callLater(function() LeoTrainer.ResearchNext(true) end, 400)
-            return
-        end
-    end
-
-    if LeoTrainer.isCrafting == 0 then return end
-
-    local data = LeoTrainer.RemoveFromQueue(LeoTrainer.isCrafting)
-    LeoTrainer.isCrafting = 0
-
-    data.crafted = GetLastCraftingResultItemLink(1)
-    table.insert(craftedItems, data)
-
-    if GetCraftingInteractionType() ~= CRAFTING_TYPE_INVALID and LeoTrainer.continueCrating == true then
-        zo_callLater(function() LeoTrainer.CraftNext() end, 200)
-    end
 end
 
 function LeoTrainer.nextStage(moreDelay)
@@ -109,7 +85,6 @@ function LeoTrainer.stationEnter(craftSkill)
     LeoTrainer.stage = LEOTRAINER_STAGE_RESEARCH
 
     LeoTrainer.continueAtStation(craftSkill)
-    -- LeoTrainerStation:SetHidden(false)
 end
 
 function LeoTrainer.stationExit(_, craftSkill)
@@ -125,40 +100,70 @@ function LeoTrainer.stationExit(_, craftSkill)
     LeoTrainer.craft.OnStationExit(craftSkill)
 end
 
-local craftSkillsBySound = {
-    [ITEM_SOUND_CATEGORY_BOW]             = CRAFTING_TYPE_WOODWORKING,
-    [ITEM_SOUND_CATEGORY_DAGGER]          = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_HEAVY_ARMOR]     = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_LIGHT_ARMOR]     = CRAFTING_TYPE_CLOTHIER,
-    [ITEM_SOUND_CATEGORY_MEDIUM_ARMOR]    = CRAFTING_TYPE_CLOTHIER,
-    [ITEM_SOUND_CATEGORY_NECKLACE]        = CRAFTING_TYPE_JEWELRYCRAFTING,
-    [ITEM_SOUND_CATEGORY_ONE_HAND_AX]     = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_ONE_HAND_HAMMER] = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_ONE_HAND_SWORD]  = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_RING]            = CRAFTING_TYPE_JEWELRYCRAFTING,
-    [ITEM_SOUND_CATEGORY_SHIELD]          = CRAFTING_TYPE_WOODWORKING,
-    [ITEM_SOUND_CATEGORY_STAFF]           = CRAFTING_TYPE_WOODWORKING,
-    [ITEM_SOUND_CATEGORY_TWO_HAND_AX]     = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_TWO_HAND_HAMMER] = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_TWO_HAND_SWORD]  = CRAFTING_TYPE_BLACKSMITHING,
-    [ITEM_SOUND_CATEGORY_ENCHANTMENT]     = CRAFTING_TYPE_ENCHANTING
+local woodworkingWeapons = {
+    [WEAPONTYPE_BOW]             = true,
+    [WEAPONTYPE_SHIELD]          = true,
+    [WEAPONTYPE_FIRE_STAFF]      = true,
+    [WEAPONTYPE_FROST_STAFF]     = true,
+    [WEAPONTYPE_LIGHTNING_STAFF] = true,
+    [WEAPONTYPE_HEALING_STAFF]   = true,
 }
 
 function LeoTrainer.CraftToLineSkill(craftSkill)
-    if craftSkill == CRAFTING_TYPE_BLACKSMITHING then return 2
-    elseif craftSkill == CRAFTING_TYPE_CLOTHIER then return 3
-    elseif craftSkill == CRAFTING_TYPE_WOODWORKING then return 7
-    elseif craftSkill == CRAFTING_TYPE_JEWELRYCRAFTING then return 5
-    elseif craftSkill == CRAFTING_TYPE_ENCHANTING then return 4 end
-
+    local skillType, skillLineIndex = GetCraftingSkillLineIndices(craftSkill)
+    if skillType == SKILL_TYPE_TRADESKILL and skillLineIndex and skillLineIndex > 0 then
+        return skillLineIndex
+    end
     return 0
 end
 
 function LeoTrainer.ItemLinkToCraftskill(itemLink)
-    return craftSkillsBySound[GetItemSoundCategoryFromLink(itemLink)] or 0
+    if not itemLink or itemLink == "" then return 0 end
+
+    local weaponType = GetItemLinkWeaponType(itemLink)
+    if weaponType and weaponType ~= WEAPONTYPE_NONE then
+        if woodworkingWeapons[weaponType] then
+            return CRAFTING_TYPE_WOODWORKING
+        end
+        return CRAFTING_TYPE_BLACKSMITHING
+    end
+
+    local armorType = GetItemLinkArmorType(itemLink)
+    if armorType == ARMORTYPE_HEAVY then
+        return CRAFTING_TYPE_BLACKSMITHING
+    elseif armorType == ARMORTYPE_LIGHT or armorType == ARMORTYPE_MEDIUM then
+        return CRAFTING_TYPE_CLOTHIER
+    end
+
+    local equipType = GetItemLinkEquipType(itemLink)
+    if equipType == EQUIP_TYPE_NECK or equipType == EQUIP_TYPE_RING then
+        return CRAFTING_TYPE_JEWELRYCRAFTING
+    end
+
+    if GetItemSoundCategoryFromLink(itemLink) == ITEM_SOUND_CATEGORY_ENCHANTMENT then
+        return CRAFTING_TYPE_ENCHANTING
+    end
+
+    return 0
+end
+
+function LeoTrainer.IsTraitKnownOrFinished(char, craftSkill, line, trait)
+    local isKnown, isResearching = LeoAltholic.ResearchStatus(craftSkill, line, trait, char.bio.name)
+    if isKnown or isResearching then
+        return true
+    end
+    if char.research and char.research.doing and char.research.doing[craftSkill] then
+        for _, researching in pairs(char.research.doing[craftSkill]) do
+            if researching.line == line and researching.trait == trait then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 local function isLineBeingResearched(research, craft, line)
+    if not research or not research.doing or not research.doing[craft] then return false end
     for _, researching in pairs(research.doing[craft]) do
         if researching.line == line then
             if researching.doneAt and researching.doneAt - GetTimeStamp() > 0 then
@@ -177,9 +182,8 @@ end
 
 local function set(tbl, k, maybeValue, ...)
     if select('#', ...) == 0 then
-      -- this will throw if the top-level tbl is nil, which is the desired behavior
-      tbl[k] = maybeValue
-      return
+        tbl[k] = maybeValue
+        return
     end
     if tbl[k] == nil then tbl[k] = {} end
     set(tbl[k], maybeValue, ...)
@@ -193,13 +197,13 @@ function LeoTrainer.GetPriorityLineList(charName, craftSkillFilter)
         charList = {LeoAltholic.GetCharByName(charName)}
     end
 
-    local craftSKillList = LeoAltholic.craftResearch
-    if craftSkillFilter ~= nil then craftSKillList = {craftSkillFilter} end
+    local craftSkillList = LeoAltholic.craftResearch
+    if craftSkillFilter ~= nil then craftSkillList = {craftSkillFilter} end
     local knownCount = {}
     local unknownTraits = {}
     local lineList = {}
     for _, char in pairs(charList) do
-        for _, craftSkill in pairs(craftSKillList) do
+        for _, craftSkill in pairs(craftSkillList) do
             set(lineList, char.bio.name, craftSkill, {})
 
             if LeoTrainer.isTrackingSkill(char.bio.name, craftSkill) and LeoTrainer.canFillSlotWithSkill(char.bio.name, craftSkill) then
@@ -211,12 +215,11 @@ function LeoTrainer.GetPriorityLineList(charName, craftSkillFilter)
                     set(knownCount, char.bio.name, craftSkill, line, 0)
 
                     for trait = 1, numTraits do
-                        local isKnown, isResearching = LeoAltholic.ResearchStatus(craftSkill, line, trait, char.bio.name)
-                        if isKnown or isResearching then
+                        if LeoTrainer.IsTraitKnownOrFinished(char, craftSkill, line, trait) then
                             local numKnown = get(knownCount, char.bio.name, craftSkill, line)
                             numKnown = numKnown + 1
                             set(knownCount, char.bio.name, craftSkill, line, numKnown)
-                        elseif not isKnown then
+                        else
                             table.insert(unknownTraits[char.bio.name][craftSkill][line], trait)
                         end
                     end
@@ -231,6 +234,9 @@ function LeoTrainer.GetPriorityLineList(charName, craftSkillFilter)
                 end
 
                 table.sort(lineList[char.bio.name][craftSkill], function(a, b)
+                    if a.count == b.count then
+                        return a.line < b.line
+                    end
                     return a.count < b.count
                 end)
 
@@ -265,7 +271,7 @@ function LeoTrainer.ScanBags(craftSkill)
 end
 
 function LeoTrainer.isTrackingSkill(charName, craftId)
-    return LeoTrainer.data.trackedTraits[charName][craftId]
+    return LeoTrainer.data.trackedTraits[charName] and LeoTrainer.data.trackedTraits[charName][craftId] or false
 end
 
 function LeoTrainer.setTrackingSkill(charName, craftId, tracking)
@@ -273,7 +279,7 @@ function LeoTrainer.setTrackingSkill(charName, craftId, tracking)
 end
 
 function LeoTrainer.canFillSlotWithSkill(charName, craftId)
-    return LeoTrainer.data.fillSlot[charName][craftId]
+    return LeoTrainer.data.fillSlot[charName] and LeoTrainer.data.fillSlot[charName][craftId] or false
 end
 
 function LeoTrainer.setFillSlotWithSkill(charName, craftId, tracking)
@@ -281,18 +287,24 @@ function LeoTrainer.setFillSlotWithSkill(charName, craftId, tracking)
 end
 
 function LeoTrainer.Initialize()
-
     LeoTrainer.settings = LibSavedVars
-        :NewAccountWide( "LeoTrainer_Settings", "Account", LeoTrainer.settingsDefaults )
-        :AddCharacterSettingsToggle( "LeoTrainer_Settings", "Characters" )
+        :NewAccountWide("LeoTrainer_Settings", "Account", LeoTrainer.settingsDefaults)
+        :AddCharacterSettingsToggle("LeoTrainer_Settings", "Characters")
     LeoTrainer.settings.loaded = true
 
-    LeoTrainer.data = LibSavedVars:NewAccountWide( "LeoTrainer_Data", LeoTrainer.dataDefaults )
+    LeoTrainer.data = LibSavedVars:NewAccountWide("LeoTrainer_Data", LeoTrainer.dataDefaults)
     LeoTrainer.data.loaded = true
+
+    if LeoTrainer.data.defaultTrainer ~= nil and LeoTrainer.settings.defaultTrainer == "Anyone" then
+        LeoTrainer.settings.defaultTrainer = LeoTrainer.data.defaultTrainer
+        LeoTrainer.data.defaultTrainer = nil
+    end
 
     if LeoTrainer.data.silent == nil then LeoTrainer.data.silent = false end
 
-    if LeoTrainer.settings.deconstruct.maxQuality[CRAFTING_TYPE_ENCHANTING] == nil then LeoTrainer.settings.deconstruct.maxQuality[CRAFTING_TYPE_ENCHANTING] = ITEM_FUNCTIONAL_QUALITY_ARCANE end
+    if LeoTrainer.settings.deconstruct.maxQuality[CRAFTING_TYPE_ENCHANTING] == nil then
+        LeoTrainer.settings.deconstruct.maxQuality[CRAFTING_TYPE_ENCHANTING] = ITEM_FUNCTIONAL_QUALITY_ARCANE
+    end
 
     LeoTrainer.stage = LEOTRAINER_STAGE_START
 
@@ -322,12 +334,6 @@ function LeoTrainer.Initialize()
             LeoTrainer.deconstruct.DoDeconstruct()
         end
     end
-
-    if GetDisplayName() == "@LeandroSilva" then
-        SLASH_COMMANDS["/rr"] = function(cmd)
-            ReloadUI()
-        end
-    end
 end
 
 function LeoTrainer.log(message, force)
@@ -346,14 +352,18 @@ local function onNewMovementInUIMode(eventCode)
     if not LeoTrainerWindow:IsHidden() then LeoTrainer.ui:CloseUI() end
 end
 
-local function onChampionPerksSceneStateChange(oldState,newState)
+local function onChampionPerksSceneStateChange(oldState, newState)
     if newState == SCENE_SHOWING then
         if not LeoTrainerWindow:IsHidden() then LeoTrainer.ui:CloseUI() end
     end
 end
 
-local function onLeoAltholicInitialized()
-    CALLBACK_MANAGER:UnregisterCallback("LeoAltholicInitialized", onLeoAltholicInitialized)
+local function finishStartup()
+    if initialized then return end
+    if not LeoAltholic or not LeoAltholic.ExportCharacters then return end
+    initialized = true
+
+    CALLBACK_MANAGER:UnregisterCallback("LeoAltholicInitialized", finishStartup)
     SCENE_MANAGER:RegisterTopLevel(LeoTrainerWindow, false)
 
     LeoTrainer.Initialize()
@@ -364,7 +374,7 @@ local function onLeoAltholicInitialized()
     end
     EVENT_MANAGER:UnregisterForEvent("LibLazyCrafting", EVENT_CRAFTING_STATION_INTERACT)
 
-    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFTING_STATION_INTERACT, function (_, ...) LeoTrainer.stationEnter(...) end)
+    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFTING_STATION_INTERACT, function(_, ...) LeoTrainer.stationEnter(...) end)
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_END_CRAFTING_STATION_INTERACT, LeoTrainer.stationExit)
     CALLBACK_MANAGER:RegisterCallback("LAM-PanelControlsCreated", function(panel) LeoTrainer_SettingsMenu:OnSettingsControlsCreated(panel) end)
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, onNewMovementInUIMode)
@@ -378,8 +388,9 @@ end
 function LeoTrainer.OnAddOnLoaded(event, addonName)
     if addonName == LeoTrainer.name then
         EVENT_MANAGER:UnregisterForEvent(LeoTrainer.name, EVENT_ADD_ON_LOADED)
-        onLeoAltholicInitialized()
+        finishStartup()
     end
 end
 
-CALLBACK_MANAGER:RegisterCallback("LeoAltholicInitialized", onLeoAltholicInitialized)
+EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_ADD_ON_LOADED, LeoTrainer.OnAddOnLoaded)
+CALLBACK_MANAGER:RegisterCallback("LeoAltholicInitialized", finishStartup)

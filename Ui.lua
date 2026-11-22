@@ -1,4 +1,3 @@
-
 LeoTrainer.ui.hidden = true
 
 local function addLine(tooltip, text, color, alignment)
@@ -28,7 +27,7 @@ function LeoTrainer.ui:OnWindowMoveStop()
 end
 
 function LeoTrainer.ui:OnHide(control, hidden)
-    if hidden then LeoTrainer.ui.HideUI() end
+    if hidden ~= false then LeoTrainer.ui.HideUI() end
 end
 
 function LeoTrainer.ui:OnShow(control, hidden)
@@ -40,7 +39,7 @@ function LeoTrainer.ui:isHidden()
 end
 
 function LeoTrainer.ui.RestorePosition()
-    local position = LeoTrainer.data.position or { left = 200; top = 200; }
+    local position = LeoTrainer.data.position or { left = 200, top = 200 }
     local left = position.left
     local top = position.top
 
@@ -55,11 +54,11 @@ end
 
 function LeoTrainer.ui.ShowUI()
     LeoTrainer.ui.UpdateUI()
-    LeoTrainer.hidden = false;
+    LeoTrainer.hidden = false
 end
 
 function LeoTrainer.ui.HideUI()
-    LeoTrainer.hidden = true;
+    LeoTrainer.hidden = true
 end
 
 function LeoTrainer.ui.ToggleUI()
@@ -67,8 +66,9 @@ function LeoTrainer.ui.ToggleUI()
 end
 
 function LeoTrainer.ui:OnMouseEnterTrait(control)
+    if not control or not control.materialItemID then return end
     InitializeTooltip(ItemTooltip, control, LEFT, 5, 0)
-    ItemTooltip:SetLink(ZO_LinkHandler_CreateLink("",nil,ITEM_LINK_TYPE,control.materialItemID,30,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
+    ItemTooltip:SetLink(ZO_LinkHandler_CreateLink("", nil, ITEM_LINK_TYPE, control.materialItemID, 30, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     ItemTooltip:SetHidden(false)
 end
 
@@ -81,17 +81,24 @@ function LeoTrainer.ui.OnStationExit(craftSkill)
     LeoTrainerWindowQueuePanelQueueScrollCraftAll:SetState(BSTATE_DISABLED)
     LeoTrainer.ui.queueScroll:RefreshData()
     LeoTrainer.ui.HideUI()
-    -- LeoTrainerStation:SetHidden(true)
 end
 
 function LeoTrainer.ui.Initialize()
-    local showButton, feedbackWindow = LibFeedback:initializeFeedbackWindow(LeoTrainer,
-        LeoTrainer.name,LeoTrainerWindow, "@LeandroSilva",
-        {TOPRIGHT, LeoTrainerWindow, TOPRIGHT,-50,3},
-        {0,1000,10000,"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Y9KM4PZU2UZ6A"},
-        "If you found a bug, have a request or a suggestion, or simply wish to donate, send a mail.")
-    LeoTrainer.feedback = feedbackWindow
-    LeoTrainer.feedback:SetDrawTier(DT_MEDIUM)
+    if LibFeedback then
+        local _, feedbackWindow = LibFeedback:initializeFeedbackWindow(
+            LeoTrainer,
+            LeoTrainer.name,
+            LeoTrainerWindow,
+            "@LeandroSilva",
+            { TOPRIGHT, LeoTrainerWindow, TOPRIGHT, -50, 3 },
+            { 0, 1000, 10000, "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=Y9KM4PZU2UZ6A" },
+            "If you found a bug, have a request or a suggestion, or simply wish to donate, send a mail."
+        )
+        LeoTrainer.feedback = feedbackWindow
+        if LeoTrainer.feedback then
+            LeoTrainer.feedback:SetDrawTier(DT_MEDIUM)
+        end
+    end
 
     LeoTrainerWindowTitle:SetText(LeoTrainer.displayName .. " v" .. LeoTrainer.version)
 
@@ -113,21 +120,20 @@ end
 
 LeoTrainerQueueList = ZO_SortFilterList:Subclass()
 function LeoTrainerQueueList:New(control)
-
     ZO_SortFilterList.InitializeSortFilterList(self, control)
 
     local sorterKeys =
     {
         ["trainer"] = {},
-        ["trainee"] = { tiebreaker = "trainer"},
-        ["researchName"] = { tiebreaker = "trainee"},
-        ["item"] = { tiebreaker = "researchName"},
+        ["trainee"] = { tiebreaker = "trainer" },
+        ["researchName"] = { tiebreaker = "trainee" },
+        ["item"] = { tiebreaker = "researchName" },
     }
 
     self.masterList = {}
     self.currentSortKey = "trainee"
     self.currentSortOrder = ZO_SORT_ORDER_UP
-    ZO_ScrollList_AddDataType(self.list, 1, "LeoTrainerQueueListTemplate", 32, function(control, data) self:SetupEntry(control, data) end)
+    ZO_ScrollList_AddDataType(self.list, 1, "LeoTrainerQueueListTemplate", 32, function(ctrl, data) self:SetupEntry(ctrl, data) end)
 
     self.sortFunction = function(listEntry1, listEntry2)
         return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, self.currentSortKey, sorterKeys, self.currentSortOrder)
@@ -137,11 +143,10 @@ function LeoTrainerQueueList:New(control)
 end
 
 function LeoTrainerQueueList:SetupEntry(control, data)
-
     control.data = data
 
     control.trainer = GetControl(control, "Trainer")
-    control.trainer:SetText(data.trainer)
+    control.trainer:SetText(data.trainer or "Anyone")
     control.trainer.knownList = data.knownList
     if data.knownList ~= nil and #data.knownList > 1 then
         control.trainer:SetHandler('OnMouseEnter', function(self)
@@ -156,7 +161,7 @@ function LeoTrainerQueueList:SetupEntry(control, data)
             addLine(InformationTooltip, zo_iconTextFormat("esoui/art/icons/icon_lmb.dds", 26, 26, "Change Trainer"))
             InformationTooltip:SetHidden(false)
         end)
-        control.trainer:SetHandler('OnMouseUp', function(control, button, upInside)
+        control.trainer:SetHandler('OnMouseUp', function(ctrl, button, upInside)
             if not upInside or (button ~= MOUSE_BUTTON_INDEX_RIGHT and button ~= MOUSE_BUTTON_INDEX_LEFT) then return end
             local newTrainer
             for trainerIndex, trainer in pairs(data.knownList) do
@@ -169,9 +174,14 @@ function LeoTrainerQueueList:SetupEntry(control, data)
                     break
                 end
             end
-            LeoTrainer.data.craftQueue[data.queueIndex].trainer = newTrainer
-            LeoTrainer.ui.queueScroll:RefreshData()
+            if newTrainer and LeoTrainer.data.craftQueue[data.queueIndex] then
+                LeoTrainer.data.craftQueue[data.queueIndex].trainer = newTrainer
+                LeoTrainer.ui.queueScroll:RefreshData()
+            end
         end)
+    else
+        control.trainer:SetHandler('OnMouseEnter', nil)
+        control.trainer:SetHandler('OnMouseUp', nil)
     end
 
     control.trainee = GetControl(control, "Trainee")
@@ -182,7 +192,7 @@ function LeoTrainerQueueList:SetupEntry(control, data)
 
     control.item = GetControl(control, "Item")
     control.item:SetText(data.itemLink)
-    control.item:SetHandler('OnMouseUp', function(control, button, upInside)
+    control.item:SetHandler('OnMouseUp', function(ctrl, button, upInside)
         if upInside == false then return end
         if button == MOUSE_BUTTON_INDEX_RIGHT then
             LeoTrainer.RemoveFromQueue(data.queueIndex)
@@ -210,7 +220,6 @@ function LeoTrainerQueueList:SortScrollList()
 end
 
 function LeoTrainerQueueList:FilterScrollList()
-
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     ZO_ClearNumericallyIndexedTable(scrollData)
 
@@ -219,7 +228,7 @@ function LeoTrainerQueueList:FilterScrollList()
     for i = 1, #self.masterList do
         local data = self.masterList[i]
         local canShow = true
-        if canShow == true and station > 0 and data.craft ~= station then
+        if station > 0 and data.craft ~= station then
             canShow = false
         end
         if station > 0 and data.trainer ~= "Anyone" and data.trainer ~= LeoAltholic.CharName then
@@ -234,37 +243,11 @@ function LeoTrainerQueueList:FilterScrollList()
     end
 end
 
-local function getTraitResearchData(research, craft, line, trait)
-    local isKnown = research.done[craft][line][trait] or false
-    local isResearching = false
-    local doneAt
-    if isKnown == false then
-        for _, researching in pairs(research.doing[craft]) do
-            if researching.line == line and researching.trait == trait then
-                doneAt = researching.doneAt
-                isResearching = true
-                break
-            end
-        end
-    end
-    return isKnown, isResearching, doneAt
-end
-
-local function isLineBeingResearched(research, craft, line)
-    for _, researching in pairs(research.doing[craft]) do
-        if researching.line == line then
-            if researching.doneAt and researching.doneAt - GetTimeStamp() > 0 then
-                return true
-            end
-        end
-    end
-    return false
-end
-
 local function getNumOngoingResearches(research, craft)
+    if not research or not research.doing or not research.doing[craft] then return 0 end
     local num = 0
     for _, researching in pairs(research.doing[craft]) do
-        if researching.doneAt - GetTimeStamp() > 0 then
+        if researching.doneAt and researching.doneAt - GetTimeStamp() > 0 then
             num = num + 1
         end
     end
@@ -273,13 +256,13 @@ end
 
 local function getFirstUnknownTraitCanBeTrained(craft, line, unknownTraits, trainer)
     for _, trait in pairs(unknownTraits) do
-
-        if trainer == nil and #LeoTrainer.knowledge[craft][line][trait] > 0 then
-            return trait, LeoTrainer.knowledge[craft][line][trait]
+        local knownList = LeoTrainer.knowledge[craft][line][trait]
+        if trainer == nil and #knownList > 0 then
+            return trait, knownList
         elseif trainer ~= nil then
-            for _, charName in pairs(LeoTrainer.knowledge[craft][line][trait]) do
+            for _, charName in pairs(knownList) do
                 if charName == trainer then
-                    return trait, LeoTrainer.knowledge[craft][line][trait]
+                    return trait, knownList
                 end
             end
         end
@@ -287,17 +270,28 @@ local function getFirstUnknownTraitCanBeTrained(craft, line, unknownTraits, trai
     return nil, {}
 end
 
+local function selectTrainerForKnownList(knownList, preferredTrainer)
+    if preferredTrainer and preferredTrainer ~= "Anyone" then
+        for _, knownName in pairs(knownList) do
+            if knownName == preferredTrainer then
+                return knownName
+            end
+        end
+    end
+    return knownList[1] or "Anyone"
+end
+
 function LeoTrainer.ui.CreateUI()
     local traitIcons = {}
     for traitItemIndex = 1, GetNumSmithingTraitItems() do
-        local traitType, _, icon, _, _, _, _ = GetSmithingTraitItemInfo(traitItemIndex)
+        local traitType, _, icon = GetSmithingTraitItemInfo(traitItemIndex)
         if traitType and traitType ~= ITEM_TRAIT_TYPE_NONE then
             traitIcons[traitType] = icon
         end
     end
 
-    for _,craft in pairs(LeoAltholic.craftResearch) do
-        local panel = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft'..craft.."Panel")
+    for _, craft in pairs(LeoAltholic.craftResearch) do
+        local panel = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft' .. craft .. "Panel")
         if craft == CRAFTING_TYPE_JEWELRYCRAFTING then
             panel = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft6PanelCraft7Panel')
         end
@@ -305,7 +299,7 @@ function LeoTrainer.ui.CreateUI()
             local lineName, lineIcon, numTraits = GetSmithingResearchLineInfo(craft, line)
             local labelLine = panel:GetNamedChild('Line' .. line)
             labelLine.tooltip = lineName
-            labelLine:SetText("|t30:30:"..lineIcon.."|t")
+            labelLine:SetText("|t30:30:" .. lineIcon .. "|t")
             for trait = 1, numTraits do
                 local traitType = GetSmithingResearchLineTraitInfo(craft, line, trait)
                 local traitName = GetString('SI_ITEMTRAITTYPE', traitType)
@@ -317,23 +311,22 @@ function LeoTrainer.ui.CreateUI()
                     i = i + 10
                 end
                 local labelTrait = panel:GetNamedChild('Trait' .. i)
-                labelTrait:SetText(traitName .. " |t28:28:"..traitIcons[traitType].."|t")
+                labelTrait:SetText(traitName .. " |t28:28:" .. (traitIcons[traitType] or "") .. "|t")
                 labelTrait.materialItemID = LeoTrainer.const.traitMaterials[traitType]
 
-                local t = WINDOW_MANAGER:CreateControl('LeoTrainerWindowCraft'..craft..'Line'..line..'Trait'..trait..'Texture', labelLine, CT_TEXTURE)
+                local t = WINDOW_MANAGER:CreateControl('LeoTrainerWindowCraft' .. craft .. 'Line' .. line .. 'Trait' .. trait .. 'Texture', labelLine, CT_TEXTURE)
                 t:SetAnchor(CENTER, labelLine, CENTER, 0, posY)
-                t:SetDimensions(25,25)
+                t:SetDimensions(25, 25)
                 t:SetMouseEnabled(true)
                 t:SetHandler('OnMouseExit', function(self)
                     ClearTooltip(InformationTooltip)
                     InformationTooltip:SetHidden(true)
                 end)
-
             end
 
-            local label = WINDOW_MANAGER:CreateControl('LeoTrainerWindowCraft'..craft..'Line'..line..'Count', labelLine, CT_LABEL)
+            local label = WINDOW_MANAGER:CreateControl('LeoTrainerWindowCraft' .. craft .. 'Line' .. line .. 'Count', labelLine, CT_LABEL)
             label:SetAnchor(CENTER, labelLine, CENTER, 8, 300)
-            label:SetDimensions(25,25)
+            label:SetDimensions(25, 25)
             label:SetFont("LeoTrainerLargeFont")
         end
     end
@@ -341,7 +334,7 @@ function LeoTrainer.ui.CreateUI()
     LeoTrainer.ui.queueScroll:RefreshData()
 
     local LeoTrainerCharDropdown = CreateControlFromVirtual('LeoTrainerCharDropdown', LeoTrainerWindow, 'LeoTrainerCharDropdown')
-    LeoTrainerCharDropdown:SetDimensions(200,35)
+    LeoTrainerCharDropdown:SetDimensions(200, 35)
     LeoTrainerCharDropdown:SetAnchor(RIGHT, LeoTrainerWindowBlacksmithingButton, LEFT, -50, 4)
     LeoTrainerCharDropdown.m_comboBox:SetSortsItems(false)
     local charDropdown = ZO_ComboBox_ObjectFromContainer(LeoTrainerCharDropdown)
@@ -363,31 +356,24 @@ function LeoTrainer.ui.CreateUI()
 end
 
 function LeoTrainer.ui.UpdateUI(charName)
-
     if charName == nil then charName = LeoAltholic.CharName end
 
-    local items = {} -- TODO LeoTrainer.ScanBags()
-    local traitIcons = {}
-    for traitItemIndex = 1, GetNumSmithingTraitItems() do
-        local traitType, _, icon, _, _, _, _ = GetSmithingTraitItemInfo(traitItemIndex)
-        if traitType and traitType ~= ITEM_TRAIT_TYPE_NONE then
-            traitIcons[traitType] = icon
-        end
-    end
+    LeoTrainer.research.Initialize()
+    local items = LeoTrainer.research.ScanBagsUnfiltered()
 
-    for _,craft in pairs(LeoAltholic.craftResearch) do
-        local panel = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft'..craft.."Panel")
+    for _, craft in pairs(LeoAltholic.craftResearch) do
+        local panel = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft' .. craft .. "Panel")
         if craft == CRAFTING_TYPE_JEWELRYCRAFTING then
             panel = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft6PanelCraft7Panel')
         end
         for line = 1, GetNumSmithingResearchLines(craft) do
-            local lineName, lineIcon, numTraits = GetSmithingResearchLineInfo(craft, line)
+            local lineName, _, numTraits = GetSmithingResearchLineInfo(craft, line)
             local knownTraits = 0
             for trait = 1, numTraits do
                 local traitType = GetSmithingResearchLineTraitInfo(craft, line, trait)
                 local traitName = GetString('SI_ITEMTRAITTYPE', traitType)
 
-                local t = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft'..craft..'Line'..line..'Trait'..trait..'Texture')
+                local t = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft' .. craft .. 'Line' .. line .. 'Trait' .. trait .. 'Texture')
 
                 local isKnown = #LeoTrainer.knowledge[craft][line][trait] > 0
                 local isUnknown = #LeoTrainer.knowledge[craft][line][trait] == 0
@@ -395,16 +381,14 @@ function LeoTrainer.ui.UpdateUI(charName)
 
                 local hasItem = false
                 for _, itemData in pairs(items) do
-                    if itemData.craft == craft and itemData.line == line and itemData.trait == trait then
-                        hasItem = LeoTrainer.CanItemBeResearched(itemData.bagId, itemData.slotIndex, itemData.item)
-                        if hasItem then
-                            break
-                        end
+                    if itemData.craftSkill == craft and itemData.line == line and itemData.trait == trait then
+                        hasItem = true
+                        break
                     end
                 end
 
                 local myself = false
-                for _,knowName in pairs(LeoTrainer.knowledge[craft][line][trait]) do
+                for _, knowName in pairs(LeoTrainer.knowledge[craft][line][trait]) do
                     if knowName == charName then
                         myself = true
                         break
@@ -416,16 +400,16 @@ function LeoTrainer.ui.UpdateUI(charName)
                     icon = 'esoui/art/buttons/accept_up.dds'
                     knownTraits = knownTraits + 1
                     if allKnown then
-                        color = {0,1,0,1}
+                        color = { 0, 1, 0, 1 }
                     else
-                        color = {1,1,0,1}
+                        color = { 1, 1, 0, 1 }
                     end
                 else
                     icon = 'esoui/art/buttons/decline_up.dds'
                     if isUnknown then
-                        color = {1,0,0,1}
+                        color = { 1, 0, 0, 1 }
                     else
-                        color = {1,0.7,0,1}
+                        color = { 1, 0.7, 0, 1 }
                     end
                 end
                 if hasItem and not allKnown then
@@ -436,7 +420,7 @@ function LeoTrainer.ui.UpdateUI(charName)
                 t:SetTexture(icon)
                 t:SetHandler('OnMouseEnter', function(self)
                     InitializeTooltip(InformationTooltip, self, LEFT, 5, 0)
-                    addLineTitle(InformationTooltip, lineName .." - ".. traitName, ZO_TOOLTIP_DEFAULT_COLOR)
+                    addLineTitle(InformationTooltip, lineName .. " - " .. traitName, ZO_TOOLTIP_DEFAULT_COLOR)
                     ZO_Tooltip_AddDivider(InformationTooltip)
 
                     addLineSubTitle(InformationTooltip, "Trainers", ZO_TOOLTIP_DEFAULT_COLOR, TEXT_ALIGN_LEFT)
@@ -463,13 +447,11 @@ function LeoTrainer.ui.UpdateUI(charName)
                     local inBag = ""
                     local inBank = ""
                     for _, itemData in pairs(items) do
-                        if itemData.craft == craft and itemData.line == line and itemData.trait == trait then
-                            if LeoTrainer.research.CanItemBeResearched(itemData.bagId, itemData.slotIndex, itemData.item) then
-                                if itemData.bagId == BAG_BANK or itemData.bagId == BAG_SUBSCRIBER_BANK then
-                                    inBank = inBank .."[".. itemData.item .. "] "
-                                elseif itemData.bagId == BAG_BACKPACK then
-                                    inBag = inBag .."["..  itemData.item .. "] "
-                                end
+                        if itemData.craftSkill == craft and itemData.line == line and itemData.trait == trait then
+                            if itemData.bagId == BAG_BANK or itemData.bagId == BAG_SUBSCRIBER_BANK then
+                                inBank = inBank .. itemData.itemLink .. " "
+                            elseif itemData.bagId == BAG_BACKPACK then
+                                inBag = inBag .. itemData.itemLink .. " "
                             end
                         end
                     end
@@ -477,10 +459,10 @@ function LeoTrainer.ui.UpdateUI(charName)
                         addLineSubTitle(InformationTooltip, "Researchable Items", ZO_TOOLTIP_DEFAULT_COLOR, TEXT_ALIGN_LEFT)
                     end
                     if inBag ~= "" then
-                        addLine(InformationTooltip, GetString(SI_INVENTORY_MENU_INVENTORY) ..": ".. inBag, LeoTrainer.const.colors.green)
+                        addLine(InformationTooltip, GetString(SI_INVENTORY_MENU_INVENTORY) .. ": " .. inBag, LeoTrainer.const.colors.green)
                     end
                     if inBank ~= "" then
-                        addLine(InformationTooltip, GetString(SI_CURRENCYLOCATION1) ..": ".. inBank, LeoTrainer.const.colors.green)
+                        addLine(InformationTooltip, GetString(SI_CURRENCYLOCATION1) .. ": " .. inBank, LeoTrainer.const.colors.green)
                     end
                     if not allKnown and not isUnknown then
                         addLine(InformationTooltip, zo_iconTextFormat("esoui/art/icons/icon_lmb.dds", 26, 26, "Queue 1"))
@@ -492,29 +474,19 @@ function LeoTrainer.ui.UpdateUI(charName)
                     t:SetHandler('OnMouseUp', function(control, button, upInside)
                         if not upInside or (button ~= MOUSE_BUTTON_INDEX_RIGHT and button ~= MOUSE_BUTTON_INDEX_LEFT) then return end
                         if #LeoTrainer.missingKnowledge[craft][line][trait] > 0 then
-                            --local matReq = LeoTrainer.const.materialRequirements[craft][line]
                             local styleId = LeoTrainer.craft.MaxStyle(line)
                             if trait == 9 and LeoTrainer.data.trainNirnhoned == false then
                                 LeoTrainer.log("Nirnhoned training is disabled in settings.")
                                 return
                             end
 
-                            local trainerName
-                            local _, knownList = getFirstUnknownTraitCanBeTrained(craft, line, {trait}, trainer)
-                            for _, knownName in pairs(knownList) do
-                                if knownName == LeoTrainer.settings.defaultTrainer then
-                                    trainerName = knownName
-                                    break
-                                end
-                            end
-                            if traitName == nil then
-                                trainerName = knownList[1]
-                            end
+                            local _, knownList = getFirstUnknownTraitCanBeTrained(craft, line, { trait }, nil)
+                            local trainerName = selectTrainerForKnownList(knownList, LeoTrainer.settings.defaultTrainer)
 
-                            for _, charName in pairs(LeoTrainer.missingKnowledge[craft][line][trait]) do
+                            for _, missingCharName in pairs(LeoTrainer.missingKnowledge[craft][line][trait]) do
                                 local traineeName = "Anyone"
                                 if button == MOUSE_BUTTON_INDEX_RIGHT then
-                                    traineeName = charName
+                                    traineeName = missingCharName
                                 end
                                 LeoTrainer.AddToQueue({
                                     trainer = trainerName,
@@ -530,6 +502,7 @@ function LeoTrainer.ui.UpdateUI(charName)
                                     useUniversalStyleItem = false,
                                     researchName = lineName .. " " .. traitName,
                                     itemLink = LeoTrainer.const.craftItems[craft][line][trait],
+                                    knownList = knownList,
                                     crafted = false
                                 })
                                 if button == MOUSE_BUTTON_INDEX_LEFT then
@@ -539,20 +512,22 @@ function LeoTrainer.ui.UpdateUI(charName)
                             LeoTrainer.ui.queueScroll:RefreshData()
                         end
                     end)
+                else
+                    t:SetHandler('OnMouseUp', nil)
                 end
             end
-            local labelCount = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft'..craft..'Line'..line..'Count')
+            local labelCount = WINDOW_MANAGER:GetControlByName('LeoTrainerWindowCraft' .. craft .. 'Line' .. line .. 'Count')
             labelCount:SetText(knownTraits)
             if knownTraits < 2 then
-                labelCount:SetColor(1,0,0,1)
+                labelCount:SetColor(1, 0, 0, 1)
             elseif knownTraits < 4 then
-                labelCount:SetColor(1,0.7,0,1)
+                labelCount:SetColor(1, 0.7, 0, 1)
             elseif knownTraits < 6 then
-                labelCount:SetColor(1,1,0,1)
+                labelCount:SetColor(1, 1, 0, 1)
             elseif knownTraits == 9 then
-                labelCount:SetColor(0,1,0,1)
+                labelCount:SetColor(0, 1, 0, 1)
             else
-                labelCount:SetColor(1,1,1,1)
+                labelCount:SetColor(1, 1, 1, 1)
             end
         end
     end
@@ -569,12 +544,18 @@ function LeoTrainer.ClearQueue()
     LeoTrainer.ui.queueScroll:RefreshData()
 end
 
-function LeoTrainer.AddToQueue(data)
+function LeoTrainer.IsQueuedForTrainee(traineeName, craft, line, trait)
     for _, item in pairs(LeoTrainer.GetCraftQueue()) do
-        if data.trainer ~= "Anyone" and data.trainee ~= "Anyone" and item.trainer == data.trainer and item.trainee == data.trainee and item.craft == data.craft and
-                item.line == data.line and item.trait == data.trait then
-            return false
+        if not item.crafted and item.trainee == traineeName and item.craft == craft and item.line == line and item.trait == trait then
+            return true
         end
+    end
+    return false
+end
+
+function LeoTrainer.AddToQueue(data)
+    if data.trainee ~= "Anyone" and LeoTrainer.IsQueuedForTrainee(data.trainee, data.craft, data.line, data.trait) then
+        return false
     end
     table.insert(LeoTrainer.GetCraftQueue(), data)
     return true
@@ -595,70 +576,50 @@ function LeoTrainer.FillKnownSlots()
     LeoTrainer.FillSlots(LeoAltholic.CharName, nil)
 end
 
-function LeoTrainer.GetResearchPriority(charName, craftSkill)
-
-end
-
-local function get(tbl, k, ...)
-    if tbl == nil or tbl[k] == nil then return nil end
-    if select('#', ...) == 0 then return tbl[k] end
-    return get(tbl[k], ...)
-end
-
-local function set(tbl, k, maybeValue, ...)
-    if select('#', ...) == 0 then
-      -- this will throw if the top-level tbl is nil, which is the desired behavior
-      tbl[k] = maybeValue
-      return
-    end
-    if tbl[k] == nil then tbl[k] = {} end
-    set(tbl[k], maybeValue, ...)
-end
-
 function LeoTrainer.FillSlots(trainer, trainee)
+    LeoTrainer.research.Initialize()
     local lineList = LeoTrainer.GetPriorityLineList()
     local charList = LeoAltholic.ExportCharacters()
-    local items = LeoTrainer.research.ScanBags()
+
+    -- Replace "local items = LeoTrainer.research.ScanBagsUnfiltered()" with:
+    local allItems = LeoTrainer.research.ScanBagsUnfiltered()
+    local items = {}
+    for _, itemData in pairs(allItems) do
+        if itemData.bagId == BAG_BANK or itemData.bagId == BAG_SUBSCRIBER_BANK then
+            table.insert(items, itemData)
+        end
+    end
 
     for _, char in pairs(charList) do
-        if (trainee == nil or trainee == char.bio.name) and trainer == nil or (trainer ~= nil and trainer ~= char.bio.name) then
+        local isValidTrainee = (trainee == nil or trainee == char.bio.name) and (trainer == nil or trainer ~= char.bio.name)
+        if isValidTrainee then
             for _, craft in pairs(LeoAltholic.craftResearch) do
                 if LeoTrainer.isTrackingSkill(char.bio.name, craft) and LeoTrainer.canFillSlotWithSkill(char.bio.name, craft) then
                     local styleId
-                    local max = char.research.done[craft].max - getNumOngoingResearches(char.research, craft)
-                    for i = 1, max do
+                    local maxSlots = (char.research and char.research.done and char.research.done[craft] and char.research.done[craft].max) or 0
+                    local openSlots = maxSlots - getNumOngoingResearches(char.research, craft)
+
+                    for _ = 1, openSlots do
                         for j, lineData in ipairs(lineList[char.bio.name][craft]) do
                             if not lineData.added and not lineData.isResearching then
                                 local trait, knownList = getFirstUnknownTraitCanBeTrained(craft, lineData.line, lineData.unknownTraits, trainer)
-                                local hasItem = false
                                 if trait ~= nil and (trait ~= 9 or LeoTrainer.data.trainNirnhoned == true) then
+                                    local hasItem = false
                                     for itemIndex, itemData in pairs(items) do
                                         if itemData.selected == false and itemData.craftSkill == craft and itemData.line == lineData.line and itemData.trait == trait then
-                                            LeoTrainer.debug("Found item for research " .. itemData.itemLink)
+                                            LeoTrainer.debug("Found existing item for research " .. itemData.itemLink)
                                             hasItem = true
                                             items[itemIndex].selected = true
                                             break
                                         end
                                     end
 
-                                    if not hasItem then
+                                    if not hasItem and not LeoTrainer.IsQueuedForTrainee(char.bio.name, craft, lineData.line, trait) then
                                         local traitType = GetSmithingResearchLineTraitInfo(craft, lineData.line, trait)
                                         local traitName = GetString('SI_ITEMTRAITTYPE', traitType)
                                         if not styleId then styleId = LeoTrainer.craft.MaxStyle(lineData.line) end
-                                        local trainerName
-                                        if trainer ~= nil then
-                                            trainerName = trainer
-                                        else
-                                            for _, knownName in pairs(knownList) do
-                                                if knownName == LeoTrainer.settings.defaultTrainer then
-                                                    trainerName = knownName
-                                                    break
-                                                end
-                                            end
-                                            if trainerName == nil then
-                                                trainerName = knownList[1]
-                                            end
-                                        end
+                                        local trainerName = trainer or selectTrainerForKnownList(knownList, LeoTrainer.settings.defaultTrainer)
+
                                         local data = {
                                             trainer = trainerName,
                                             trainee = char.bio.name,
@@ -676,8 +637,6 @@ function LeoTrainer.FillSlots(trainer, trainee)
                                             knownList = knownList,
                                             crafted = false
                                         }
-                                        if trainer ~= nil then data.trainer = trainer end
-                                        if trainee ~= nil then data.trainee = trainee end
                                         LeoTrainer.AddToQueue(data)
                                     end
                                     lineList[char.bio.name][craft][j].added = true

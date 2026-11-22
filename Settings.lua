@@ -1,5 +1,4 @@
-
-LeoTrainer.craftNames = {"Blacksmith", "Clothing", "Woodworking", "Jewelry"}
+LeoTrainer.craftNames = { "Blacksmith", "Clothing", "Woodworking", "Jewelry" }
 
 LeoTrainer_SettingsMenu = ZO_Object:Subclass()
 local LAM = LibAddonMenu2
@@ -14,28 +13,29 @@ function LeoTrainer_SettingsMenu:Initialize()
 end
 
 function LeoTrainer_SettingsMenu:SelectAll(craftSkill)
-    for i, char in ipairs(LeoAltholic.GetCharacters()) do
+    for _, char in ipairs(LeoAltholic.GetCharacters()) do
         if craftSkill ~= nil then
             LeoTrainer.setTrackingSkill(char.bio.name, craftSkill, true)
             LeoTrainer.setFillSlotWithSkill(char.bio.name, craftSkill, true)
         else
-            for _, craftSkill in ipairs({ CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING, CRAFTING_TYPE_JEWELRYCRAFTING }) do
-                LeoTrainer.setTrackingSkill(char.bio.name, craftSkill, true)
-                LeoTrainer.setFillSlotWithSkill(char.bio.name, craftSkill, true)
+            for _, skill in ipairs({ CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING, CRAFTING_TYPE_JEWELRYCRAFTING }) do
+                LeoTrainer.setTrackingSkill(char.bio.name, skill, true)
+                LeoTrainer.setFillSlotWithSkill(char.bio.name, skill, true)
             end
         end
     end
     ReloadUI()
 end
+
 function LeoTrainer_SettingsMenu:DeselectAll(craftSkill)
-    for i, char in ipairs(LeoAltholic.GetCharacters()) do
+    for _, char in ipairs(LeoAltholic.GetCharacters()) do
         if craftSkill ~= nil then
             LeoTrainer.setTrackingSkill(char.bio.name, craftSkill, false)
             LeoTrainer.setFillSlotWithSkill(char.bio.name, craftSkill, false)
         else
-            for _, craftSkill in ipairs({ CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING, CRAFTING_TYPE_JEWELRYCRAFTING }) do
-                LeoTrainer.setTrackingSkill(char.bio.name, craftSkill, false)
-                LeoTrainer.setFillSlotWithSkill(char.bio.name, craftSkill, false)
+            for _, skill in ipairs({ CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING, CRAFTING_TYPE_JEWELRYCRAFTING }) do
+                LeoTrainer.setTrackingSkill(char.bio.name, skill, false)
+                LeoTrainer.setFillSlotWithSkill(char.bio.name, skill, false)
             end
         end
     end
@@ -56,7 +56,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
     local panelData = {
         type = "panel",
         name = LeoTrainer.name,
-        displayName = "|c39B027"..LeoTrainer.displayName.."|r",
+        displayName = "|c39B027" .. LeoTrainer.displayName .. "|r",
         author = "@LeandroSilva",
         version = LeoTrainer.version,
         registerForRefresh = true,
@@ -97,7 +97,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
                 setFunc = function(value) LeoTrainer.settings.research.maxQuality[craftSkill] = value end,
                 default = LeoTrainer.settingsDefaults.research.maxQuality[craftSkill],
                 disabled = function() return not LeoTrainer.settings.research.auto end,
-            });
+            })
         end
         table.insert(deconstructMaxQualities, {
             type = "dropdown",
@@ -109,14 +109,13 @@ function LeoTrainer_SettingsMenu:CreatePanel()
             setFunc = function(value) LeoTrainer.settings.deconstruct.maxQuality[craftSkill] = value end,
             default = LeoTrainer.settingsDefaults.deconstruct.maxQuality[craftSkill],
             disabled = function() return not LeoTrainer.settings.deconstruct.auto end,
-        });
+        })
     end
-
 
     local optionsData = {
         {
             type = "header",
-            name = "|c3f7fff"..GetString(SI_GAMEPAD_OPTIONS_MENU).."|r"
+            name = "|c3f7fff" .. GetString(SI_GAMEPAD_OPTIONS_MENU) .. "|r"
         },
         {
             type = "checkbox",
@@ -139,28 +138,28 @@ function LeoTrainer_SettingsMenu:CreatePanel()
             controls = {
                 {
                     type = "description",
-                    text = "To avoid problems, auto research will ony work with marked items for research by FCOItemSaver. Also, only until max skill level. This addon will automatically mark items after crafts them."
-                },{
+                    text = "To avoid problems, auto research will only work with items marked for research by FCOItemSaver. Also, only until max skill level. This addon will automatically mark items after crafting them."
+                }, {
                     type = "checkbox",
                     name = "Research automatically when in station",
                     default = false,
                     getFunc = function() return LeoTrainer.settings.research.auto end,
                     setFunc = function(value) LeoTrainer.settings.research.auto = value end,
                     disabled = function() return not FCOIS end,
-                },{
+                }, {
                     type = "checkbox",
                     name = "List items in the chat",
                     default = true,
                     getFunc = function() return LeoTrainer.settings.research.listInChat end,
                     setFunc = function(value) LeoTrainer.settings.research.listInChat = value end,
-                },{
+                }, {
                     type = "checkbox",
                     name = "Allow crafted items",
-                    default = false,
+                    default = true,
                     getFunc = function() return LeoTrainer.settings.research.allowCrafted end,
                     setFunc = function(value) LeoTrainer.settings.research.allowCrafted = value end,
                     disabled = function() return not LeoTrainer.settings.research.auto end,
-                },{
+                }, {
                     type = "checkbox",
                     name = "Allow set items",
                     default = false,
@@ -170,7 +169,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
                 },
                 unpack(researchMaxQualities)
             }
-        },{
+        }, {
             type = "submenu",
             name = GetString(SI_CRAFTING_PERFORM_FREE_CRAFT),
             controls = {
@@ -182,34 +181,34 @@ function LeoTrainer_SettingsMenu:CreatePanel()
                     setFunc = function(value) LeoTrainer.settings.craft.auto = value end,
                 }
             }
-        },{
+        }, {
             type = "submenu",
             name = GetString(SI_SMITHING_TAB_DECONSTRUCTION),
             controls = {
                 {
                     type = "description",
-                    text = "To avoid problems, auto deconstruct will ony work with marked items by FCOItemSaver and marked with deconstruction or inticate icons. Also, only until max skill level."
-                },{
+                    text = "To avoid problems, auto deconstruct will only work with items marked by FCOItemSaver with deconstruction or intricate icons. Also, only until max skill level."
+                }, {
                     type = "checkbox",
                     name = "Deconstruct automatically when in station",
                     default = false,
                     getFunc = function() return LeoTrainer.settings.deconstruct.auto end,
                     setFunc = function(value) LeoTrainer.settings.deconstruct.auto = value end,
                     disabled = function() return not FCOIS end,
-                },{
+                }, {
                     type = "checkbox",
                     name = "List items in the chat",
                     default = true,
                     getFunc = function() return LeoTrainer.settings.deconstruct.listInChat end,
                     setFunc = function(value) LeoTrainer.settings.deconstruct.listInChat = value end,
-                },{
+                }, {
                     type = "checkbox",
                     name = "Allow items in Bank",
                     tooltip = "On: will scan backpack and bank. Off: Only backpack",
-                    default = false,
+                    default = true,
                     getFunc = function() return LeoTrainer.settings.deconstruct.allowBank end,
                     setFunc = function(value) LeoTrainer.settings.deconstruct.allowBank = value end,
-                },{
+                }, {
                     type = "checkbox",
                     name = "Allow set items",
                     default = false,
@@ -218,7 +217,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
                 },
                 unpack(deconstructMaxQualities)
             }
-        },{
+        }, {
             type = "submenu",
             name = GetString(SI_INTERACT_OPTION_BANK),
             controls = {
@@ -230,33 +229,33 @@ function LeoTrainer_SettingsMenu:CreatePanel()
                     setFunc = function(value) LeoTrainer.settings.bank.autoDeposit = value end,
                 }
             }
-        },{
+        }, {
             type = "header",
             name = "|c3f7fffCharacters|r"
-        },{
+        }, {
             type = "dropdown",
-            name = "Prefered Trainer",
-            tooltip = "This character will be selected as the default trainer if knows the trait.",
+            name = "Preferred Trainer",
+            tooltip = "This character will be selected as the default trainer if they know the trait.",
             choices = charNames,
-            default = "Anyone",
+            default = LeoTrainer.settingsDefaults.defaultTrainer,
             getFunc = function() return LeoTrainer.settings.defaultTrainer end,
             setFunc = function(value) LeoTrainer.settings.defaultTrainer = value end
-        },{
+        }, {
             type = "description",
             text = "Select which crafting skills will be available for each char and which ones will be used when filling empty research slots"
-        },{
+        }, {
             type = "button",
             name = "Select all",
             func = function() LeoTrainer_SettingsMenu:SelectAll() end,
             warning = "Will need to reload the UI.",
             width = "half",
-        },{
+        }, {
             type = "button",
             name = "Deselect all",
             func = function() LeoTrainer_SettingsMenu:DeselectAll() end,
             warning = "Will need to reload the UI.",
             width = "half",
-        },{
+        }, {
             type = "custom",
             reference = OptionsName .. "Characters"
         }
@@ -303,7 +302,7 @@ function LeoTrainer_SettingsMenu:AddCharacter(id, char, last)
     control.label = control:GetNamedChild("Name")
     control.label:SetText(char.bio.name)
     control.label:SetColor(ZO_SELECTED_TEXT:UnpackRGBA())
-    for k,craftId in pairs(LeoAltholic.craftResearch) do
+    for _, craftId in pairs(LeoAltholic.craftResearch) do
         local checkbox = control:GetNamedChild("ST_" .. craftId)
         checkbox.data = checkbox.data or {}
         checkbox.data.craftId = craftId
@@ -331,16 +330,11 @@ function LeoTrainer_SettingsMenu:ClearCharacter(id)
 end
 
 function LeoTrainer_SettingsMenu:OnSettingsControlsCreated(panel)
-    --Each time an options panel is created, once for each addon viewed
     if panel:GetName() == "LeoTrainerOptions" then
         self:AddCharacters()
     end
 end
 
 function LeoTrainer_SettingsMenu:IsCreated()
-    if self.container then
-        return true
-    else
-        return false
-    end
+    return self.container ~= nil
 end

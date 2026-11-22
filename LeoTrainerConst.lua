@@ -7,14 +7,16 @@ LeoTrainer = {
 }
 LeoTrainer.name = "LeoTrainer"
 LeoTrainer.displayName = "Leo's Trainer"
-LeoTrainer.version = "2.2.3"
+LeoTrainer.version = "2.3.0"
 LeoTrainer.chatPrefix = "|c39B027" .. LeoTrainer.name .. "|r: "
 LeoTrainer.setting = nil
 LeoTrainer.hidden = true
 LeoTrainer.filterKnown = false
 LeoTrainer.myself = {}
 LeoTrainer.isDebug = false
+LeoTrainer.continueCrafting = false
 LeoTrainer.settingsDefaults = {
+    defaultTrainer = "Anyone",
     research = {
         auto = false,
         listInChat = true,
@@ -53,8 +55,7 @@ LeoTrainer.dataDefaults = {
     craftQueue = {},
     fillSlot = {},
     trainNirnhoned = false,
-    defaultTrainer = "Anyone",
-    position = { left = 200; top = 200; }
+    position = { left = 200, top = 200 }
 }
 
 LeoTrainer.const = {}

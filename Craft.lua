@@ -1,4 +1,3 @@
-
 local Craft = {
     namesToPatternIndexes = {},
     isCrafting = false
@@ -10,7 +9,7 @@ end
 function Craft.MaxStyle(piece)
     local maxStyleId = -1
     local maxQty = 0
-    for _,i in ipairs(LeoTrainer.const.racialStyles) do
+    for _, i in ipairs(LeoTrainer.const.racialStyles) do
         if IsSmithingStyleKnown(i, piece) == true then
             local qty = GetCurrentSmithingStyleItemCount(i)
             if qty > maxQty then
@@ -39,12 +38,12 @@ function Craft.GetPatternIndexes(craft)
 end
 
 function Craft.GetPattern(craftSkill, line)
-    return Craft.namesToPatternIndexes[craftSkill]["lines"][line] or nil
+    return Craft.namesToPatternIndexes[craftSkill] and Craft.namesToPatternIndexes[craftSkill]["lines"][line] or nil
 end
 
 local function wasCraftedByMe(bagId, slotIndex)
     local creator = GetItemCreatorName(bagId, slotIndex)
-    if creator == nil then return false end
+    if creator == nil or creator == "" then return false end
 
     local charList = LeoAltholic.ExportCharacters()
     for _, char in pairs(charList) do
@@ -59,10 +58,12 @@ function Craft.ScanBackpackForCrafted()
     local bag = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK)
     for _, data in pairs(bag) do
         local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
-        local type = GetItemType(data.bagId, data.slotIndex)
+        local itemType = GetItemType(data.bagId, data.slotIndex)
         local trait = GetItemLinkTraitInfo(itemLink)
-        if wasCraftedByMe(data.bagId, data.slotIndex) and (type == ITEMTYPE_ARMOR or type == ITEMTYPE_WEAPON) and
-            trait ~= ITEM_TRAIT_TYPE_NONE and GetItemQuality(data.bagId, data.slotIndex) == ITEM_FUNCTIONAL_QUALITY_NORMAL then
+        if wasCraftedByMe(data.bagId, data.slotIndex)
+            and (itemType == ITEMTYPE_ARMOR or itemType == ITEMTYPE_WEAPON)
+            and trait ~= ITEM_TRAIT_TYPE_NONE
+            and GetItemQuality(data.bagId, data.slotIndex) == ITEM_FUNCTIONAL_QUALITY_NORMAL then
             table.insert(list, {
                 bagId = data.bagId,
                 slotIndex = data.slotIndex,
@@ -82,8 +83,7 @@ function Craft.MarkItem(bagId, slotIndex)
 end
 
 local function addItemToLLC(queueIndex, data)
-
-    LeoTrainer.log("Crafting " .. data.itemLink .. " ("..data.researchName..") ...")
+    LeoTrainer.log("Crafting " .. data.itemLink .. " (" .. data.researchName .. ") ...")
 
     data.patternIndex = Craft.namesToPatternIndexes[data.craft]["lines"][data.line]
 
@@ -99,7 +99,7 @@ local function addItemToLLC(queueIndex, data)
 
     data.itemStyleId = Craft.MaxStyle(data.line)
 
-    if data.itemStyleId == -1 then
+    if data.itemStyleId == -1 and data.craft ~= CRAFTING_TYPE_JEWELRYCRAFTING then
         LeoTrainer.log("Not enough known style material.")
         return false
     end
@@ -115,7 +115,7 @@ local function addItemToLLC(queueIndex, data)
         nil,
         ITEM_FUNCTIONAL_QUALITY_NORMAL,
         true,
-        queueIndex -- reference
+        queueIndex
     )
 
     return true
@@ -123,8 +123,10 @@ end
 
 local function addItemsToLLC()
     local craftSkill = GetCraftingInteractionType()
+    local currentChar = LeoAltholic.CharName
     for index, data in ipairs(LeoTrainer.data.craftQueue) do
-        if not data.crafted and data.craft == craftSkill and LeoAltholic.CharKnowsTrait(data.craft, data.line, data.trait) == true then
+        local canTrainerCraft = (data.trainer == "Anyone" or data.trainer == currentChar)
+        if not data.crafted and canTrainerCraft and data.craft == craftSkill and LeoAltholic.CharKnowsTrait(data.craft, data.line, data.trait) == true then
             if addItemToLLC(index, data) then Craft.isCrafting = true end
         end
     end
@@ -138,20 +140,22 @@ function Craft.TryWritCreator(craftSkill)
     if WritCreater then
         EVENT_MANAGER:RegisterForEvent(WritCreater.name, EVENT_CRAFT_COMPLETED, WritCreater.craftCompleteHandler)
         WritCreater.craftCheck(1, craftSkill)
- 	end
+    end
     LibLazyCrafting.craftInteract(1, craftSkill)
 end
 
 function Craft.StillHaveCraftToDo(craftSkill)
+    local currentChar = LeoAltholic.CharName
     for _, data in pairs(LeoTrainer.data.craftQueue) do
-        if data.craft == craftSkill and not data.crafted then return true end
+        local canTrainerCraft = (data.trainer == "Anyone" or data.trainer == currentChar)
+        if canTrainerCraft and data.craft == craftSkill and not data.crafted then return true end
     end
 
     return false
 end
 
 function Craft.RemoveCraftedFromQueue(craftSkill)
-    local i=1
+    local i = 1
     while i <= #LeoTrainer.data.craftQueue do
         if LeoTrainer.data.craftQueue[i].crafted then
             table.remove(LeoTrainer.data.craftQueue, i)
@@ -188,7 +192,6 @@ function Craft.OnStationEnter(craftSkill)
         return
     end
 
-    -- LeoTrainer.debug("Nothing to craft here.")
     LeoTrainer.nextStage()
 end
 

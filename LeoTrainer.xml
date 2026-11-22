@@ -8,8 +8,8 @@
             <Dimensions x="850" y="840" />
             <Anchor point="TOP" relativeTo="GuiRoot" relativePoint="TOPCENTER" offsetY="100" />
             <OnMoveStop> LeoTrainer.ui:OnWindowMoveStop() </OnMoveStop>
-            <OnHide> LeoTrainer.ui:OnHide(self, hidden) </OnHide>
-            <OnShow> LeoTrainer.ui:OnShow(self, hidden) </OnShow>
+            <OnHide> LeoTrainer.ui:OnHide(self, true) </OnHide>
+            <OnShow> LeoTrainer.ui:OnShow(self, false) </OnShow>
             <Controls>
                 <Backdrop name="$(parent)BG" centerColor="000000" edgeColor="222222">
                     <Anchor point="TOPLEFT" relativePoint="TOPLEFT" relativeTo="$(parent)"/>
@@ -861,7 +861,7 @@
                                     <Anchor point="TOPLEFT" relativeTo="$(parent)Clear" relativePoint="TOPRIGHT" offsetX="0" offsetY="0"/>
                                     <ButtonState state="DISABLED"/>
                                     <OnClicked>
-                                        LeoTrainer.continueCrating = true
+                                        LeoTrainer.continueCrafting = true
                                         LeoTrainer.craft.StartCraft()
                                     </OnClicked>
                                 </Button>

@@ -1,11 +1,11 @@
 ## Title: Leo's Trainer
-## APIVersion: 100035
-## Version: 2.2.3
-## AddOnVersion: 223
-## Author: |c39B027@LeandroSilva|r
+## Author: LeandroSilva
+## Version: 2.3.0
+## AddOnVersion: 230
+## APIVersion: 101051 101052
+## DependsOn: LeoAltholic LibLazyCrafting LibAddonMenu-2.0 LibSavedVars
+## OptionalDependsOn: FCOItemSaver PersonalAssistant DolgubonsLazyWritCreator LibFeedback
 ## SavedVariables: LeoTrainer_Settings LeoTrainer_Data
-## OptionalDependsOn: FCOItemSaver PersonalAssistant DolgubonsLazyWritCreator
-## DependsOn: LeoAltholic LibLazyCrafting LibFeedback LibAddonMenu-2.0 LibSavedVars
 
 LeoTrainerConst.lua
 LeoTrainer.lua
