@@ -3,7 +3,7 @@
 ## Version: 2.3.0
 ## AddOnVersion: 230
 ## APIVersion: 101051 101052
-## DependsOn: LeoAltholic LibLazyCrafting LibAddonMenu-2.0 LibSavedVars
+## DependsOn: LeoAltholic>=1900 LibLazyCrafting>=4042 LibAddonMenu-2.0>=43 LibSavedVars>=60101
 ## OptionalDependsOn: FCOItemSaver PersonalAssistant DolgubonsLazyWritCreator LibFeedback
 ## SavedVariables: LeoTrainer_Settings LeoTrainer_Data
 
