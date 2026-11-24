@@ -251,18 +251,26 @@ function LeoTrainer.ScanBags(craftSkill)
     local shouldResearch = LeoTrainer.research.ShouldResearch(craftSkill)
     local shouldDeconstruct = LeoTrainer.deconstruct.ShouldDeconstruct(craftSkill)
     local list = {}
-    local items = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK, BAG_BANK, BAG_SUBSCRIBER_BANK)
-    for _, data in pairs(items) do
-        local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
+    local bags = { BAG_BACKPACK, BAG_BANK }
+    if IsESOPlusSubscriber() then
+        table.insert(bags, BAG_SUBSCRIBER_BANK)
+    end
 
-        local itemCraftSkill = LeoTrainer.ItemLinkToCraftskill(itemLink)
-        if itemCraftSkill ~= nil and itemCraftSkill > 0 and itemCraftSkill == craftSkill then
-            local handled = false
-            if shouldResearch then
-                handled = LeoTrainer.research.HandleItem(data.bagId, data.slotIndex, itemLink, craftSkill)
-            end
-            if not handled and shouldDeconstruct then
-                handled = LeoTrainer.deconstruct.HandleItem(data.bagId, data.slotIndex, itemLink, craftSkill)
+    for _, bagId in ipairs(bags) do
+        local bagSize = GetBagSize(bagId)
+        for slotIndex = 0, bagSize - 1 do
+            if GetItemId(bagId, slotIndex) ~= 0 then
+                local itemLink = GetItemLink(bagId, slotIndex, LINK_STYLE_BRACKETS)
+                local itemCraftSkill = LeoTrainer.ItemLinkToCraftskill(itemLink)
+                if itemCraftSkill ~= nil and itemCraftSkill > 0 and itemCraftSkill == craftSkill then
+                    local handled = false
+                    if shouldResearch then
+                        handled = LeoTrainer.research.HandleItem(bagId, slotIndex, itemLink, craftSkill)
+                    end
+                    if not handled and shouldDeconstruct then
+                        handled = LeoTrainer.deconstruct.HandleItem(bagId, slotIndex, itemLink, craftSkill)
+                    end
+                end
             end
         end
     end

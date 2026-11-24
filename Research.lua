@@ -100,13 +100,29 @@ local function canIResearchItem(itemLink)
     return true
 end
 
+local function canIResearchItem(itemLink)
+    local craftSkill, line, trait = Research.GetResearchData(itemLink)
+    if not craftSkill then return false end
+
+    if not CanItemLinkBeTraitResearched(itemLink) then
+        return false
+    end
+
+    local _, isResearching = LeoAltholic.ResearchStatus(craftSkill, line, trait)
+    if isResearching then
+        return false
+    end
+
+    return true
+end
+
 function Research.CanItemBeResearched(bagId, slotIndex, itemLink, craftSkill)
     if not FCOIS then return false end
 
     if itemLink == nil then itemLink = GetItemLink(bagId, slotIndex) end
 
     local itemType = GetItemType(bagId, slotIndex)
-    if itemType ~= ITEMTYPE_ARMOR and itemType ~= ITEMTYPE_WEAPON then return false end
+    if itemType ~= ITEMTYPE_ARMOR and itemType ~= ITEMTYPE_WEAPON and itemType ~= ITEMTYPE_TRINKET then return false end
 
     if FCOIS.IsIconEnabled(FCOIS_CON_ICON_RESEARCH) and not FCOIS.IsMarked(bagId, slotIndex, FCOIS_CON_ICON_RESEARCH) then
         return false
@@ -131,20 +147,27 @@ end
 
 function Research.ScanBags()
     local list = {}
-    local items = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK, BAG_BANK, BAG_SUBSCRIBER_BANK)
-    for _, data in pairs(items) do
-        local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
-        local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
-        if craftSkill and LeoTrainer.research.CanItemBeResearched(data.bagId, data.slotIndex, itemLink, craftSkill) then
-            table.insert(list, {
-                bagId = data.bagId,
-                slotIndex = data.slotIndex,
-                itemLink = itemLink,
-                craftSkill = craftSkill,
-                line = line,
-                trait = trait,
-                selected = false
-            })
+    local bags = { BAG_BACKPACK, BAG_BANK }
+    if IsESOPlusSubscriber() then
+        table.insert(bags, BAG_SUBSCRIBER_BANK)
+    end
+    for _, bagId in ipairs(bags) do
+        for slotIndex = 0, GetBagSize(bagId) - 1 do
+            if GetItemId(bagId, slotIndex) ~= 0 then
+                local itemLink = GetItemLink(bagId, slotIndex, LINK_STYLE_BRACKETS)
+                local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
+                if craftSkill and LeoTrainer.research.CanItemBeResearched(bagId, slotIndex, itemLink, craftSkill) then
+                    table.insert(list, {
+                        bagId = bagId,
+                        slotIndex = slotIndex,
+                        itemLink = itemLink,
+                        craftSkill = craftSkill,
+                        line = line,
+                        trait = trait,
+                        selected = false
+                    })
+                end
+            end
         end
     end
 
@@ -153,22 +176,29 @@ end
 
 function Research.ScanBagsUnfiltered()
     local list = {}
-    local items = SHARED_INVENTORY:GenerateFullSlotData(nil, BAG_BACKPACK, BAG_BANK, BAG_SUBSCRIBER_BANK)
-    for _, data in pairs(items) do
-        local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
-        local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
-        if craftSkill then
-            local hasSet = GetItemLinkSetInfo(itemLink)
-            if LeoTrainer.settings.research.allowSets or not hasSet then
-                table.insert(list, {
-                    bagId = data.bagId,
-                    slotIndex = data.slotIndex,
-                    itemLink = itemLink,
-                    craftSkill = craftSkill,
-                    line = line,
-                    trait = trait,
-                    selected = false
-                })
+    local bags = { BAG_BACKPACK, BAG_BANK }
+    if IsESOPlusSubscriber() then
+        table.insert(bags, BAG_SUBSCRIBER_BANK)
+    end
+    for _, bagId in ipairs(bags) do
+        for slotIndex = 0, GetBagSize(bagId) - 1 do
+            if GetItemId(bagId, slotIndex) ~= 0 then
+                local itemLink = GetItemLink(bagId, slotIndex, LINK_STYLE_BRACKETS)
+                local craftSkill, line, trait = LeoTrainer.research.GetResearchData(itemLink)
+                if craftSkill then
+                    local hasSet = GetItemLinkSetInfo(itemLink)
+                    if LeoTrainer.settings.research.allowSets or not hasSet then
+                        table.insert(list, {
+                            bagId = bagId,
+                            slotIndex = slotIndex,
+                            itemLink = itemLink,
+                            craftSkill = craftSkill,
+                            line = line,
+                            trait = trait,
+                            selected = false
+                        })
+                    end
+                end
             end
         end
     end
