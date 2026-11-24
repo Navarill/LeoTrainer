@@ -8,9 +8,11 @@
 					<Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="280"/>
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetY="36"/>
 					<Controls>
-						<Label name="$(parent)ST_Label" text="Can be trained" font="ZoFontWinH4" wrapMode="ELLIPSIS">
+						<Label name="$(parent)ST_Label" text="Allow training" font="ZoFontWinH4" wrapMode="ELLIPSIS" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="10"/>
-							<Dimensions x="290" y="26"/>
+							<Dimensions x="180" y="26"/>
+							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, "Enable this skill line for characters participating in trait training (both Trainer and Trainees).")</OnMouseEnter>
+							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Label>
 						<Texture name="$(parent)ST_1" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_blacksmithing_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetY="30"/>
@@ -37,9 +39,11 @@
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 
-						<Label name="$(parent)FS_Label" text="Fill empty slots" font="ZoFontWinH4" wrapMode="ELLIPSIS">
+						<Label name="$(parent)FS_Label" text="Fill empty slots" font="ZoFontWinH4" wrapMode="ELLIPSIS" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="200"/>
 							<Dimensions x="290" y="26"/>
+							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, "Queue missing traits automatically when clicking 'Fill all slots' if this character has open research slots.")</OnMouseEnter>
+							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Label>
 						<Texture name="$(parent)FS_1" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_blacksmithing_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="190" offsetY="30"/>

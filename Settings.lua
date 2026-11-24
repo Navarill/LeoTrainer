@@ -242,7 +242,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
             setFunc = function(value) LeoTrainer.settings.defaultTrainer = value end
         }, {
             type = "description",
-            text = "Select which crafting skills will be available for each char and which ones will be used when filling empty research slots"
+            text = "Check 'Allow training' for all participating characters (Trainer and Trainees). Check 'Fill empty slots' only on Trainee characters whose open research slots you want to fill."
         }, {
             type = "button",
             name = "Select all",
