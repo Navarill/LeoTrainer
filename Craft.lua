@@ -63,7 +63,7 @@ function Craft.ScanBackpackForCrafted()
         if wasCraftedByMe(data.bagId, data.slotIndex)
             and (itemType == ITEMTYPE_ARMOR or itemType == ITEMTYPE_WEAPON)
             and trait ~= ITEM_TRAIT_TYPE_NONE
-            and GetItemQuality(data.bagId, data.slotIndex) == ITEM_FUNCTIONAL_QUALITY_NORMAL then
+            and GetItemFunctionalQuality(data.bagId, data.slotIndex) == ITEM_FUNCTIONAL_QUALITY_NORMAL then
             table.insert(list, {
                 bagId = data.bagId,
                 slotIndex = data.slotIndex,

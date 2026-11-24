@@ -5,7 +5,7 @@
         <Down>LeoTrainer.ui:ToggleUI()</Down>
       </Action>
       <Action name="LEOTRAINER_CRAFT_NEXT">
-        <Down>LeoTrainer.CraftNext()</Down>
+        <Down>LeoTrainer.craft.StartCraft()</Down>
       </Action>
       <Action name="LEOTRAINER_DECON">
         <Down>LeoTrainer.deconstruct.DoDeconstruct()</Down>

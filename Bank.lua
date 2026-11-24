@@ -141,7 +141,11 @@ local function IsTraitNeededByAnyCharacter(craftSkill, line, trait)
     return missing ~= nil and #missing > 0
 end
 
-function Bank.OnOpenBank()
+function Bank.OnOpenBank(_, bankBag)
+    if bankBag ~= BAG_BANK then
+        return
+    end
+
     if not LeoTrainer.settings or not LeoTrainer.settings.bank or not LeoTrainer.settings.bank.autoDeposit then
         return
     end

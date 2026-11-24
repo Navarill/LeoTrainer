@@ -112,7 +112,8 @@ function Research.CanItemBeResearched(bagId, slotIndex, itemLink, craftSkill)
         return false
     end
 
-    if not LeoTrainer.settings.research.allowCrafted and GetItemCreatorName(bagId, slotIndex) ~= nil then
+    local creator = GetItemCreatorName(bagId, slotIndex)
+    if not LeoTrainer.settings.research.allowCrafted and creator ~= nil and creator ~= "" then
         return false
     end
 
@@ -121,7 +122,7 @@ function Research.CanItemBeResearched(bagId, slotIndex, itemLink, craftSkill)
         return false
     end
 
-    if craftSkill ~= nil and craftSkill > 0 and LeoTrainer.settings.research.maxQuality[craftSkill] < GetItemQuality(bagId, slotIndex) then
+    if craftSkill ~= nil and craftSkill > 0 and LeoTrainer.settings.research.maxQuality[craftSkill] < GetItemFunctionalQuality(bagId, slotIndex) then
         return false
     end
 
@@ -236,8 +237,10 @@ end
 
 local function OnResearchTimeout(craftSkill)
     return function()
-        ZO_Alert(UI_ALERT_CATEGORY_ALERT, nil, "Timeout during research")
+        EVENT_MANAGER:UnregisterForUpdate(LeoTrainer.name .. ".ResearchTimeout")
         EVENT_MANAGER:UnregisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED)
+        Research.isResearching = false
+        ZO_Alert(UI_ALERT_CATEGORY_ALERT, nil, "Timeout during research")
         LeoTrainer.nextStage()
     end
 end

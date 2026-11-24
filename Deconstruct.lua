@@ -35,7 +35,7 @@ function Deconstruct.CanItemBeDeconstructed(bagId, slotIndex, itemLink, craftSki
         return false
     end
 
-    if craftSkill > 0 and LeoTrainer.settings.deconstruct.maxQuality[craftSkill] < GetItemQuality(bagId, slotIndex) then
+    if craftSkill > 0 and LeoTrainer.settings.deconstruct.maxQuality[craftSkill] < GetItemFunctionalQuality(bagId, slotIndex) then
         return false
     end
 
@@ -113,7 +113,7 @@ end
 
 function Deconstruct.OnStationEnter(craftSkill)
     local line = LeoTrainer.CraftToLineSkill(craftSkill)
-    local maxLevel = line > 0 and (GetSkillLineDynamicInfo(SKILL_TYPE_TRADESKILL, line) >= 50) or true
+    local maxLevel = line <= 0 or GetSkillLineDynamicInfo(SKILL_TYPE_TRADESKILL, line) >= 50
     if #Deconstruct.queue > 0 and not maxLevel then
         KEYBIND_STRIP:AddKeybindButtonGroup(Deconstruct.keybindStripDescriptor)
     end
