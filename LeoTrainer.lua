@@ -389,14 +389,38 @@ function LeoTrainer.setFillSlotWithSkill(charId, craftId, tracking)
     LeoTrainer.data.fillSlot[charId][craftId] = tracking
 end
 
-function LeoTrainer.Initialize()
-    LeoTrainer.settings = LibSavedVars
-        :NewAccountWide("LeoTrainer_Settings", "Account", LeoTrainer.settingsDefaults)
-        :AddCharacterSettingsToggle("LeoTrainer_Settings", "Characters")
-    LeoTrainer.settings.loaded = true
+local function copyLegacySavedVars(source, target)
+    if type(source) ~= "table" or type(target) ~= "table" then return end
+    for k, v in pairs(source) do
+        if k ~= "version" and k ~= "$LastCharacterName" then
+            if type(v) == "table" and type(target[k]) == "table" then
+                copyLegacySavedVars(v, target[k])
+            else
+                target[k] = ZO_DeepTableCopy(v)
+            end
+        end
+    end
+end
 
-    LeoTrainer.data = LibSavedVars:NewAccountWide("LeoTrainer_Data", LeoTrainer.dataDefaults)
+function LeoTrainer.InitSavedVars()
+    local worldName = GetWorldName()
+
+    LeoTrainer.settingsControl = ZO_SavedVars:NewAccountWide("LeoTrainer_Settings", 1, "AccountWide", { accountWide = true }, worldName)
+
+    if LeoTrainer.settingsControl.accountWide then
+        LeoTrainer.settings = ZO_SavedVars:NewAccountWide("LeoTrainer_Settings", 1, nil, LeoTrainer.settingsDefaults, worldName)
+    else
+        LeoTrainer.settings = ZO_SavedVars:NewCharacterIdSettings("LeoTrainer_Settings", 1, nil, LeoTrainer.settingsDefaults, worldName)
+    end
+
+    LeoTrainer.data = ZO_SavedVars:NewAccountWide("LeoTrainer_Data", 1, nil, LeoTrainer.dataDefaults, worldName)
+
+    LeoTrainer.settings.loaded = true
     LeoTrainer.data.loaded = true
+end
+
+function LeoTrainer.Initialize()
+    LeoTrainer.InitSavedVars()
 
     if LeoTrainer.data.defaultTrainer ~= nil and LeoTrainer.settings.defaultTrainer == "Anyone" then
         LeoTrainer.settings.defaultTrainer = LeoTrainer.data.defaultTrainer

@@ -137,7 +137,18 @@ function LeoTrainer_SettingsMenu:CreatePanel()
             getFunc = function() return LeoTrainer.data.silent end,
             setFunc = function(value) LeoTrainer.data.silent = value end,
         },
-        LeoTrainer.settings:GetLibAddonMenuAccountCheckbox(),
+        {
+            type = "checkbox",
+            name = "Account-wide settings",
+            tooltip = "Share settings across all characters on this server. Disable to use per-character settings.",
+            default = true,
+            requiresReload = true,
+            getFunc = function() return LeoTrainer.settingsControl.accountWide end,
+            setFunc = function(value)
+                LeoTrainer.settingsControl.accountWide = value
+                LeoTrainer.InitSavedVars()
+            end,
+        },
         {
             type = "submenu",
             name = GetString(SI_SMITHING_TAB_RESEARCH),
