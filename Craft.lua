@@ -123,9 +123,9 @@ end
 
 local function addItemsToLLC()
     local craftSkill = GetCraftingInteractionType()
-    local currentChar = LeoAltholic.CharName
+    local currentCharId = GetCurrentCharacterId()
     for index, data in ipairs(LeoTrainer.data.craftQueue) do
-        local canTrainerCraft = (data.trainer == "Anyone" or data.trainer == currentChar)
+        local canTrainerCraft = (data.trainer == "Anyone" or LeoTrainer.GetCharIdByName(data.trainer) == currentCharId)
         if not data.crafted and canTrainerCraft and data.craft == craftSkill and LeoAltholic.CharKnowsTrait(data.craft, data.line, data.trait) == true then
             if addItemToLLC(index, data) then Craft.isCrafting = true end
         end
@@ -145,9 +145,9 @@ function Craft.TryWritCreator(craftSkill)
 end
 
 function Craft.StillHaveCraftToDo(craftSkill)
-    local currentChar = LeoAltholic.CharName
+    local currentCharId = GetCurrentCharacterId()
     for _, data in pairs(LeoTrainer.data.craftQueue) do
-        local canTrainerCraft = (data.trainer == "Anyone" or data.trainer == currentChar)
+        local canTrainerCraft = (data.trainer == "Anyone" or LeoTrainer.GetCharIdByName(data.trainer) == currentCharId)
         if canTrainerCraft and data.craft == craftSkill and not data.crafted then return true end
     end
 

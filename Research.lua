@@ -89,19 +89,6 @@ end
 
 local function canIResearchItem(itemLink)
     local craftSkill, line, trait = Research.GetResearchData(itemLink)
-
-    if not craftSkill then return false end
-
-    local isKnown, isResearching = LeoAltholic.ResearchStatus(craftSkill, line, trait)
-    if isKnown or isResearching then
-        return false
-    end
-
-    return true
-end
-
-local function canIResearchItem(itemLink)
-    local craftSkill, line, trait = Research.GetResearchData(itemLink)
     if not craftSkill then return false end
 
     if not CanItemLinkBeTraitResearched(itemLink) then
@@ -294,8 +281,8 @@ function Research.ResearchNext(craftSkill)
         return
     end
 
-    local myName = GetUnitName("player")
-    local researching, total = LeoAltholic.GetResearchCounters(craftSkill, myName)
+    local myId = GetCurrentCharacterId()
+    local researching, total = LeoAltholic.GetResearchCounters(craftSkill)
     if researching >= total then
         LeoTrainer.debug("No empty research slots.")
         LeoTrainer.nextStage()
@@ -308,12 +295,12 @@ function Research.ResearchNext(craftSkill)
         return
     end
 
-    if lineList == nil then lineList = LeoTrainer.GetPriorityLineList(myName, craftSkill) end
-    for i, lineData in ipairs(lineList[myName][craftSkill]) do
+    if lineList == nil then lineList = LeoTrainer.GetPriorityLineList(myId, craftSkill) end
+    for i, lineData in ipairs(lineList[myId][craftSkill]) do
         if not lineData.added and not lineData.isResearching then
             for j, data in pairs(Research.queue) do
                 if lineData.line == data.line then
-                    lineList[myName][craftSkill][i].added = true
+                    lineList[myId][craftSkill][i].added = true
                     local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
                     local traitType = GetItemLinkTraitInfo(itemLink)
                     local traitName = GetString("SI_ITEMTRAITTYPE", traitType)
@@ -378,15 +365,16 @@ function Research.Initialize()
     LeoTrainer.missingKnowledge = {}
 
     for _, char in pairs(charList) do
-        if LeoTrainer.data.trackedTraits[char.bio.name] == nil then
-            LeoTrainer.data.trackedTraits[char.bio.name] = {}
+        local charId = LeoTrainer.GetCharacterId(char)
+        if LeoTrainer.data.trackedTraits[charId] == nil then
+            LeoTrainer.data.trackedTraits[charId] = {}
         end
-        if not LeoTrainer.data.fillSlot[char.bio.name] then
-            LeoTrainer.data.fillSlot[char.bio.name] = {}
+        if not LeoTrainer.data.fillSlot[charId] then
+            LeoTrainer.data.fillSlot[charId] = {}
         end
         for _, craftId in pairs(LeoAltholic.craftResearch) do
-            LeoTrainer.data.trackedTraits[char.bio.name][craftId] = LeoTrainer.data.trackedTraits[char.bio.name][craftId] or false
-            LeoTrainer.data.fillSlot[char.bio.name][craftId] = LeoTrainer.data.fillSlot[char.bio.name][craftId] or false
+            LeoTrainer.data.trackedTraits[charId][craftId] = LeoTrainer.data.trackedTraits[charId][craftId] or false
+            LeoTrainer.data.fillSlot[charId][craftId] = LeoTrainer.data.fillSlot[charId][craftId] or false
         end
 
         for _, craft in pairs(LeoAltholic.craftResearch) do
@@ -400,9 +388,9 @@ function Research.Initialize()
                     if LeoTrainer.knowledge[craft][line][trait] == nil then LeoTrainer.knowledge[craft][line][trait] = {} end
                     if LeoTrainer.missingKnowledge[craft][line][trait] == nil then LeoTrainer.missingKnowledge[craft][line][trait] = {} end
                     if LeoTrainer.IsTraitKnownOrFinished(char, craft, line, trait) then
-                        table.insert(LeoTrainer.knowledge[craft][line][trait], char.bio.name)
+                        table.insert(LeoTrainer.knowledge[craft][line][trait], charId)
                     else
-                        table.insert(LeoTrainer.missingKnowledge[craft][line][trait], char.bio.name)
+                        table.insert(LeoTrainer.missingKnowledge[craft][line][trait], charId)
                     end
                 end
             end

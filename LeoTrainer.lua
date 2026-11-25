@@ -147,6 +147,93 @@ function LeoTrainer.ItemLinkToCraftskill(itemLink)
     return 0
 end
 
+local charNameToId = {}
+local charIdToName = {}
+
+function LeoTrainer.RefreshCharacterMap()
+    charNameToId = {}
+    charIdToName = {}
+    for i = 1, GetNumCharacters() do
+        local rawName, _, _, _, _, _, charId = GetCharacterInfo(i)
+        if charId and charId ~= "" then
+            local cleanName = zo_strformat("<<1>>", rawName)
+            charNameToId[cleanName] = charId
+            charIdToName[charId] = cleanName
+        end
+    end
+end
+
+function LeoTrainer.GetCharIdByName(charName)
+    if not charName or charName == "" or charName == "Anyone" then return charName end
+    if charIdToName[charName] then return charName end
+    if not next(charNameToId) then LeoTrainer.RefreshCharacterMap() end
+    return charNameToId[charName] or charName
+end
+
+function LeoTrainer.GetCharNameById(charId)
+    if not charId or charId == "" or charId == "Anyone" then return charId end
+    if not next(charIdToName) then LeoTrainer.RefreshCharacterMap() end
+    return charIdToName[charId] or charId
+end
+
+function LeoTrainer.GetCharacterId(char)
+    if not char then return GetCurrentCharacterId() end
+    if type(char) == "string" then
+        return LeoTrainer.GetCharIdByName(char)
+    end
+    if char.bio and char.bio.id and char.bio.id ~= "" then
+        return char.bio.id
+    end
+    if char.bio and char.bio.name then
+        return LeoTrainer.GetCharIdByName(char.bio.name)
+    end
+    return nil
+end
+
+function LeoTrainer.MigrateCharacterIds()
+    LeoTrainer.RefreshCharacterMap()
+
+    local function migrateTable(tbl)
+        if type(tbl) ~= "table" then return end
+        local keysToMigrate = {}
+        for key, value in pairs(tbl) do
+            local resolvedId = charNameToId[key]
+            if resolvedId and resolvedId ~= key then
+                table.insert(keysToMigrate, { oldKey = key, newId = resolvedId, value = value })
+            end
+        end
+        for _, entry in ipairs(keysToMigrate) do
+            if tbl[entry.newId] == nil then
+                tbl[entry.newId] = entry.value
+            end
+            tbl[entry.oldKey] = nil
+        end
+    end
+
+    migrateTable(LeoTrainer.data.trackedTraits)
+    migrateTable(LeoTrainer.data.fillSlot)
+
+    if LeoTrainer.settings.defaultTrainer and LeoTrainer.settings.defaultTrainer ~= "Anyone" then
+        LeoTrainer.settings.defaultTrainer = LeoTrainer.GetCharIdByName(LeoTrainer.settings.defaultTrainer)
+    end
+
+    if LeoTrainer.data.craftQueue then
+        for _, item in pairs(LeoTrainer.data.craftQueue) do
+            if item.trainer and item.trainer ~= "Anyone" then
+                item.trainer = LeoTrainer.GetCharIdByName(item.trainer)
+            end
+            if item.trainee and item.trainee ~= "Anyone" then
+                item.trainee = LeoTrainer.GetCharIdByName(item.trainee)
+            end
+            if item.knownList then
+                for idx, trainerKey in ipairs(item.knownList) do
+                    item.knownList[idx] = LeoTrainer.GetCharIdByName(trainerKey)
+                end
+            end
+        end
+    end
+end
+
 function LeoTrainer.IsTraitKnownOrFinished(char, craftSkill, line, trait)
     local isKnown, isResearching = LeoAltholic.ResearchStatus(craftSkill, line, trait, char.bio.name)
     if isKnown or isResearching then
@@ -189,12 +276,13 @@ local function set(tbl, k, maybeValue, ...)
     set(tbl[k], maybeValue, ...)
 end
 
-function LeoTrainer.GetPriorityLineList(charName, craftSkillFilter)
+function LeoTrainer.GetPriorityLineList(charIdFilter, craftSkillFilter)
     local charList
-    if charName == nil then
+    if charIdFilter == nil then
         charList = LeoAltholic.ExportCharacters()
     else
-        charList = {LeoAltholic.GetCharByName(charName)}
+        local resolvedName = LeoTrainer.GetCharNameById(charIdFilter)
+        charList = {LeoAltholic.GetCharByName(resolvedName)}
     end
 
     local craftSkillList = LeoAltholic.craftResearch
@@ -203,37 +291,38 @@ function LeoTrainer.GetPriorityLineList(charName, craftSkillFilter)
     local unknownTraits = {}
     local lineList = {}
     for _, char in pairs(charList) do
+        local charId = LeoTrainer.GetCharacterId(char)
         for _, craftSkill in pairs(craftSkillList) do
-            set(lineList, char.bio.name, craftSkill, {})
+            set(lineList, charId, craftSkill, {})
 
-            if LeoTrainer.isTrackingSkill(char.bio.name, craftSkill) and LeoTrainer.canFillSlotWithSkill(char.bio.name, craftSkill) then
+            if LeoTrainer.isTrackingSkill(charId, craftSkill) and LeoTrainer.canFillSlotWithSkill(charId, craftSkill) then
 
                 for line = 1, GetNumSmithingResearchLines(craftSkill) do
                     local lineName, _, numTraits = GetSmithingResearchLineInfo(craftSkill, line)
 
-                    set(unknownTraits, char.bio.name, craftSkill, line, {})
-                    set(knownCount, char.bio.name, craftSkill, line, 0)
+                    set(unknownTraits, charId, craftSkill, line, {})
+                    set(knownCount, charId, craftSkill, line, 0)
 
                     for trait = 1, numTraits do
                         if LeoTrainer.IsTraitKnownOrFinished(char, craftSkill, line, trait) then
-                            local numKnown = get(knownCount, char.bio.name, craftSkill, line)
+                            local numKnown = get(knownCount, charId, craftSkill, line)
                             numKnown = numKnown + 1
-                            set(knownCount, char.bio.name, craftSkill, line, numKnown)
+                            set(knownCount, charId, craftSkill, line, numKnown)
                         else
-                            table.insert(unknownTraits[char.bio.name][craftSkill][line], trait)
+                            table.insert(unknownTraits[charId][craftSkill][line], trait)
                         end
                     end
 
-                    table.insert(lineList[char.bio.name][craftSkill], {
+                    table.insert(lineList[charId][craftSkill], {
                         line = line,
                         lineName = lineName,
-                        count = knownCount[char.bio.name][craftSkill][line],
-                        unknownTraits = unknownTraits[char.bio.name][craftSkill][line],
+                        count = knownCount[charId][craftSkill][line],
+                        unknownTraits = unknownTraits[charId][craftSkill][line],
                         isResearching = isLineBeingResearched(char.research, craftSkill, line)
                     })
                 end
 
-                table.sort(lineList[char.bio.name][craftSkill], function(a, b)
+                table.sort(lineList[charId][craftSkill], function(a, b)
                     if a.count == b.count then
                         return a.line < b.line
                     end
@@ -278,20 +367,26 @@ function LeoTrainer.ScanBags(craftSkill)
     return list
 end
 
-function LeoTrainer.isTrackingSkill(charName, craftId)
-    return LeoTrainer.data.trackedTraits[charName] and LeoTrainer.data.trackedTraits[charName][craftId] or false
+function LeoTrainer.isTrackingSkill(charId, craftId)
+    charId = LeoTrainer.GetCharIdByName(charId)
+    return LeoTrainer.data.trackedTraits[charId] and LeoTrainer.data.trackedTraits[charId][craftId] or false
 end
 
-function LeoTrainer.setTrackingSkill(charName, craftId, tracking)
-    LeoTrainer.data.trackedTraits[charName][craftId] = tracking
+function LeoTrainer.setTrackingSkill(charId, craftId, tracking)
+    charId = LeoTrainer.GetCharIdByName(charId)
+    LeoTrainer.data.trackedTraits[charId] = LeoTrainer.data.trackedTraits[charId] or {}
+    LeoTrainer.data.trackedTraits[charId][craftId] = tracking
 end
 
-function LeoTrainer.canFillSlotWithSkill(charName, craftId)
-    return LeoTrainer.data.fillSlot[charName] and LeoTrainer.data.fillSlot[charName][craftId] or false
+function LeoTrainer.canFillSlotWithSkill(charId, craftId)
+    charId = LeoTrainer.GetCharIdByName(charId)
+    return LeoTrainer.data.fillSlot[charId] and LeoTrainer.data.fillSlot[charId][craftId] or false
 end
 
-function LeoTrainer.setFillSlotWithSkill(charName, craftId, tracking)
-    LeoTrainer.data.fillSlot[charName][craftId] = tracking
+function LeoTrainer.setFillSlotWithSkill(charId, craftId, tracking)
+    charId = LeoTrainer.GetCharIdByName(charId)
+    LeoTrainer.data.fillSlot[charId] = LeoTrainer.data.fillSlot[charId] or {}
+    LeoTrainer.data.fillSlot[charId][craftId] = tracking
 end
 
 function LeoTrainer.Initialize()
@@ -315,6 +410,8 @@ function LeoTrainer.Initialize()
     end
 
     LeoTrainer.stage = LEOTRAINER_STAGE_START
+
+    LeoTrainer.MigrateCharacterIds()
 
     LeoTrainer.craft.Initialize()
     LeoTrainer.research.Initialize()

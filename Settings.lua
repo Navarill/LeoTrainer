@@ -14,13 +14,14 @@ end
 
 function LeoTrainer_SettingsMenu:SelectAll(craftSkill)
     for _, char in ipairs(LeoAltholic.GetCharacters()) do
+        local charId = LeoTrainer.GetCharacterId(char)
         if craftSkill ~= nil then
-            LeoTrainer.setTrackingSkill(char.bio.name, craftSkill, true)
-            LeoTrainer.setFillSlotWithSkill(char.bio.name, craftSkill, true)
+            LeoTrainer.setTrackingSkill(charId, craftSkill, true)
+            LeoTrainer.setFillSlotWithSkill(charId, craftSkill, true)
         else
             for _, skill in ipairs({ CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING, CRAFTING_TYPE_JEWELRYCRAFTING }) do
-                LeoTrainer.setTrackingSkill(char.bio.name, skill, true)
-                LeoTrainer.setFillSlotWithSkill(char.bio.name, skill, true)
+                LeoTrainer.setTrackingSkill(charId, skill, true)
+                LeoTrainer.setFillSlotWithSkill(charId, skill, true)
             end
         end
     end
@@ -29,13 +30,14 @@ end
 
 function LeoTrainer_SettingsMenu:DeselectAll(craftSkill)
     for _, char in ipairs(LeoAltholic.GetCharacters()) do
+        local charId = LeoTrainer.GetCharacterId(char)
         if craftSkill ~= nil then
-            LeoTrainer.setTrackingSkill(char.bio.name, craftSkill, false)
-            LeoTrainer.setFillSlotWithSkill(char.bio.name, craftSkill, false)
+            LeoTrainer.setTrackingSkill(charId, craftSkill, false)
+            LeoTrainer.setFillSlotWithSkill(charId, craftSkill, false)
         else
             for _, skill in ipairs({ CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING, CRAFTING_TYPE_JEWELRYCRAFTING }) do
-                LeoTrainer.setTrackingSkill(char.bio.name, skill, false)
-                LeoTrainer.setFillSlotWithSkill(char.bio.name, skill, false)
+                LeoTrainer.setTrackingSkill(charId, skill, false)
+                LeoTrainer.setFillSlotWithSkill(charId, skill, false)
             end
         end
     end
@@ -69,8 +71,12 @@ function LeoTrainer_SettingsMenu:CreatePanel()
     local charNames = {
         "Anyone"
     }
+    local charValues = {
+        "Anyone"
+    }
     for _, char in pairs(LeoAltholic.GetCharacters()) do
         table.insert(charNames, char.bio.name)
+        table.insert(charValues, LeoTrainer.GetCharacterId(char))
     end
 
     local researchMaxQualities = {
@@ -237,6 +243,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
             name = "Preferred Trainer",
             tooltip = "This character will be selected as the default trainer if they know the trait.",
             choices = charNames,
+            choicesValues = charValues,
             default = LeoTrainer.settingsDefaults.defaultTrainer,
             getFunc = function() return LeoTrainer.settings.defaultTrainer end,
             setFunc = function(value) LeoTrainer.settings.defaultTrainer = value end
@@ -280,15 +287,16 @@ end
 
 local function Toggle(checkbox, checked)
     local control = checkbox:GetParent()
-    LeoTrainer.setTrackingSkill(control.data.charName, checkbox.data.craftId, checked)
+    LeoTrainer.setTrackingSkill(control.data.charId, checkbox.data.craftId, checked)
 end
 
 local function ToggleFill(checkbox, checked)
     local control = checkbox:GetParent()
-    LeoTrainer.setFillSlotWithSkill(control.data.charName, checkbox.data.craftId, checked)
+    LeoTrainer.setFillSlotWithSkill(control.data.charId, checkbox.data.craftId, checked)
 end
 
 function LeoTrainer_SettingsMenu:AddCharacter(id, char, last)
+    local charId = LeoTrainer.GetCharacterId(char)
     local control = CreateControlFromVirtual("$(parent)", self.container, "LeoTrainer_SettingsCharacter", id)
     if last then
         control:SetAnchor(TOPLEFT, last, BOTTOMLEFT, 0, 0)
@@ -298,7 +306,7 @@ function LeoTrainer_SettingsMenu:AddCharacter(id, char, last)
         control:SetAnchor(BOTTOMRIGHT, LeoTrainer_SettingsCharactersIconsST_Label, TOPRIGHT, 0, 60)
     end
     control.data = control.data or {}
-    control.data.charName = char.bio.name
+    control.data.charId = charId
     control.label = control:GetNamedChild("Name")
     control.label:SetText(char.bio.name)
     control.label:SetColor(ZO_SELECTED_TEXT:UnpackRGBA())
@@ -307,14 +315,14 @@ function LeoTrainer_SettingsMenu:AddCharacter(id, char, last)
         checkbox.data = checkbox.data or {}
         checkbox.data.craftId = craftId
         checkbox.data.tooltipText = nil
-        ZO_CheckButton_SetCheckState(checkbox, LeoTrainer.isTrackingSkill(char.bio.name, craftId))
+        ZO_CheckButton_SetCheckState(checkbox, LeoTrainer.isTrackingSkill(charId, craftId))
         ZO_CheckButton_SetToggleFunction(checkbox, Toggle)
 
         checkbox = control:GetNamedChild("FS_" .. craftId)
         checkbox.data = checkbox.data or {}
         checkbox.data.craftId = craftId
         checkbox.data.tooltipText = nil
-        ZO_CheckButton_SetCheckState(checkbox, LeoTrainer.canFillSlotWithSkill(char.bio.name, craftId))
+        ZO_CheckButton_SetCheckState(checkbox, LeoTrainer.canFillSlotWithSkill(charId, craftId))
         ZO_CheckButton_SetToggleFunction(checkbox, ToggleFill)
     end
     return control

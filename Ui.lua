@@ -146,7 +146,7 @@ function LeoTrainerQueueList:SetupEntry(control, data)
     control.data = data
 
     control.trainer = GetControl(control, "Trainer")
-    control.trainer:SetText(data.trainer or "Anyone")
+    control.trainer:SetText(LeoTrainer.GetCharNameById(data.trainer) or "Anyone")
     control.trainer.knownList = data.knownList
     if data.knownList ~= nil and #data.knownList > 1 then
         control.trainer:SetHandler('OnMouseEnter', function(self)
@@ -154,8 +154,8 @@ function LeoTrainerQueueList:SetupEntry(control, data)
             addLineTitle(InformationTooltip, "Trainers", ZO_TOOLTIP_DEFAULT_COLOR)
             ZO_Tooltip_AddDivider(InformationTooltip)
 
-            for _, knowName in pairs(data.knownList) do
-                addLine(InformationTooltip, knowName, LeoTrainer.const.colors.green)
+            for _, knowId in pairs(data.knownList) do
+                addLine(InformationTooltip, LeoTrainer.GetCharNameById(knowId), LeoTrainer.const.colors.green)
             end
 
             addLine(InformationTooltip, zo_iconTextFormat("esoui/art/icons/icon_lmb.dds", 26, 26, "Change Trainer"))
@@ -164,8 +164,8 @@ function LeoTrainerQueueList:SetupEntry(control, data)
         control.trainer:SetHandler('OnMouseUp', function(ctrl, button, upInside)
             if not upInside or (button ~= MOUSE_BUTTON_INDEX_RIGHT and button ~= MOUSE_BUTTON_INDEX_LEFT) then return end
             local newTrainer
-            for trainerIndex, trainer in pairs(data.knownList) do
-                if trainer == data.trainer then
+            for trainerIndex, trainerId in pairs(data.knownList) do
+                if trainerId == data.trainer then
                     if trainerIndex < #data.knownList then
                         newTrainer = data.knownList[trainerIndex + 1]
                     else
@@ -185,7 +185,7 @@ function LeoTrainerQueueList:SetupEntry(control, data)
     end
 
     control.trainee = GetControl(control, "Trainee")
-    control.trainee:SetText(data.trainee)
+    control.trainee:SetText(LeoTrainer.GetCharNameById(data.trainee) or "Anyone")
 
     control.researchName = GetControl(control, "Trait")
     control.researchName:SetText(data.researchName)
@@ -224,6 +224,7 @@ function LeoTrainerQueueList:FilterScrollList()
     ZO_ClearNumericallyIndexedTable(scrollData)
 
     local station = GetCraftingInteractionType()
+    local currentCharId = GetCurrentCharacterId()
 
     for i = 1, #self.masterList do
         local data = self.masterList[i]
@@ -231,7 +232,7 @@ function LeoTrainerQueueList:FilterScrollList()
         if station > 0 and data.craft ~= station then
             canShow = false
         end
-        if station > 0 and data.trainer ~= "Anyone" and data.trainer ~= LeoAltholic.CharName then
+        if station > 0 and data.trainer ~= "Anyone" and LeoTrainer.GetCharIdByName(data.trainer) ~= currentCharId then
             canShow = false
         end
 
@@ -254,14 +255,14 @@ local function getNumOngoingResearches(research, craft)
     return num
 end
 
-local function getFirstUnknownTraitCanBeTrained(craft, line, unknownTraits, trainer)
+local function getFirstUnknownTraitCanBeTrained(craft, line, unknownTraits, trainerId)
     for _, trait in pairs(unknownTraits) do
         local knownList = LeoTrainer.knowledge[craft][line][trait]
-        if trainer == nil and #knownList > 0 then
+        if trainerId == nil and #knownList > 0 then
             return trait, knownList
-        elseif trainer ~= nil then
-            for _, charName in pairs(knownList) do
-                if charName == trainer then
+        elseif trainerId ~= nil then
+            for _, charId in pairs(knownList) do
+                if charId == trainerId then
                     return trait, knownList
                 end
             end
@@ -272,9 +273,10 @@ end
 
 local function selectTrainerForKnownList(knownList, preferredTrainer)
     if preferredTrainer and preferredTrainer ~= "Anyone" then
-        for _, knownName in pairs(knownList) do
-            if knownName == preferredTrainer then
-                return knownName
+        local preferredId = LeoTrainer.GetCharIdByName(preferredTrainer)
+        for _, knownId in pairs(knownList) do
+            if knownId == preferredId then
+                return knownId
             end
         end
     end
@@ -340,12 +342,14 @@ function LeoTrainer.ui.CreateUI()
     local charDropdown = ZO_ComboBox_ObjectFromContainer(LeoTrainerCharDropdown)
     charDropdown:ClearItems()
 
+    local currentCharId = GetCurrentCharacterId()
     local defaultItem
     for _, char in pairs(LeoAltholic.ExportCharacters()) do
+        local charId = LeoTrainer.GetCharacterId(char)
         local entry = charDropdown:CreateItemEntry(char.bio.name, function()
-            LeoTrainer.ui.UpdateUI(char.bio.name)
+            LeoTrainer.ui.UpdateUI(charId)
         end)
-        if char.bio.name == LeoAltholic.CharName then
+        if charId == currentCharId then
             defaultItem = entry
         end
         charDropdown:AddItem(entry)
@@ -355,8 +359,12 @@ function LeoTrainer.ui.CreateUI()
     end
 end
 
-function LeoTrainer.ui.UpdateUI(charName)
-    if charName == nil then charName = LeoAltholic.CharName end
+function LeoTrainer.ui.UpdateUI(charId)
+    if charId == nil then
+        charId = GetCurrentCharacterId()
+    else
+        charId = LeoTrainer.GetCharIdByName(charId)
+    end
 
     LeoTrainer.research.Initialize()
     local items = LeoTrainer.research.ScanBagsUnfiltered()
@@ -388,8 +396,8 @@ function LeoTrainer.ui.UpdateUI(charName)
                 end
 
                 local myself = false
-                for _, knowName in pairs(LeoTrainer.knowledge[craft][line][trait]) do
-                    if knowName == charName then
+                for _, knowId in pairs(LeoTrainer.knowledge[craft][line][trait]) do
+                    if knowId == charId then
                         myself = true
                         break
                     end
@@ -427,8 +435,8 @@ function LeoTrainer.ui.UpdateUI(charName)
                     if allKnown then
                         addLine(InformationTooltip, "All", LeoTrainer.const.colors.green)
                     elseif isKnown then
-                        for _, knowName in pairs(LeoTrainer.knowledge[craft][line][trait]) do
-                            addLine(InformationTooltip, knowName, LeoTrainer.const.colors.green)
+                        for _, knowId in pairs(LeoTrainer.knowledge[craft][line][trait]) do
+                            addLine(InformationTooltip, LeoTrainer.GetCharNameById(knowId), LeoTrainer.const.colors.green)
                         end
                     else
                         addLine(InformationTooltip, "None", LeoTrainer.const.colors.red)
@@ -440,8 +448,8 @@ function LeoTrainer.ui.UpdateUI(charName)
                     elseif isUnknown then
                         addLine(InformationTooltip, "All", LeoTrainer.const.colors.red)
                     else
-                        for _, knowName in pairs(LeoTrainer.missingKnowledge[craft][line][trait]) do
-                            addLine(InformationTooltip, knowName, LeoTrainer.const.colors.red)
+                        for _, missingId in pairs(LeoTrainer.missingKnowledge[craft][line][trait]) do
+                            addLine(InformationTooltip, LeoTrainer.GetCharNameById(missingId), LeoTrainer.const.colors.red)
                         end
                     end
                     local inBag = ""
@@ -481,16 +489,16 @@ function LeoTrainer.ui.UpdateUI(charName)
                             end
 
                             local _, knownList = getFirstUnknownTraitCanBeTrained(craft, line, { trait }, nil)
-                            local trainerName = selectTrainerForKnownList(knownList, LeoTrainer.settings.defaultTrainer)
+                            local trainerId = selectTrainerForKnownList(knownList, LeoTrainer.settings.defaultTrainer)
 
-                            for _, missingCharName in pairs(LeoTrainer.missingKnowledge[craft][line][trait]) do
-                                local traineeName = "Anyone"
+                            for _, missingCharId in pairs(LeoTrainer.missingKnowledge[craft][line][trait]) do
+                                local traineeId = "Anyone"
                                 if button == MOUSE_BUTTON_INDEX_RIGHT then
-                                    traineeName = missingCharName
+                                    traineeId = missingCharId
                                 end
                                 LeoTrainer.AddToQueue({
-                                    trainer = trainerName,
-                                    trainee = traineeName,
+                                    trainer = trainerId,
+                                    trainee = traineeId,
                                     craft = craft,
                                     line = line,
                                     trait = trait,
@@ -544,9 +552,10 @@ function LeoTrainer.ClearQueue()
     LeoTrainer.ui.queueScroll:RefreshData()
 end
 
-function LeoTrainer.IsQueuedForTrainee(traineeName, craft, line, trait)
+function LeoTrainer.IsQueuedForTrainee(traineeId, craft, line, trait)
+    traineeId = LeoTrainer.GetCharIdByName(traineeId)
     for _, item in pairs(LeoTrainer.GetCraftQueue()) do
-        if not item.crafted and item.trainee == traineeName and item.craft == craft and item.line == line and item.trait == trait then
+        if not item.crafted and LeoTrainer.GetCharIdByName(item.trainee) == traineeId and item.craft == craft and item.line == line and item.trait == trait then
             return true
         end
     end
@@ -569,19 +578,21 @@ function LeoTrainer.RemoveFromQueue(pos)
 end
 
 function LeoTrainer.FillMySlots()
-    LeoTrainer.FillSlots(nil, LeoAltholic.CharName)
+    LeoTrainer.FillSlots(nil, GetCurrentCharacterId())
 end
 
 function LeoTrainer.FillKnownSlots()
-    LeoTrainer.FillSlots(LeoAltholic.CharName, nil)
+    LeoTrainer.FillSlots(GetCurrentCharacterId(), nil)
 end
 
 function LeoTrainer.FillSlots(trainer, trainee)
+    local trainerId = trainer and LeoTrainer.GetCharIdByName(trainer) or nil
+    local traineeId = trainee and LeoTrainer.GetCharIdByName(trainee) or nil
+
     LeoTrainer.research.Initialize()
     local lineList = LeoTrainer.GetPriorityLineList()
     local charList = LeoAltholic.ExportCharacters()
 
-    -- Replace "local items = LeoTrainer.research.ScanBagsUnfiltered()" with:
     local allItems = LeoTrainer.research.ScanBagsUnfiltered()
     local items = {}
     for _, itemData in pairs(allItems) do
@@ -591,18 +602,19 @@ function LeoTrainer.FillSlots(trainer, trainee)
     end
 
     for _, char in pairs(charList) do
-        local isValidTrainee = (trainee == nil or trainee == char.bio.name) and (trainer == nil or trainer ~= char.bio.name)
+        local charId = LeoTrainer.GetCharacterId(char)
+        local isValidTrainee = (traineeId == nil or traineeId == charId) and (trainerId == nil or trainerId ~= charId)
         if isValidTrainee then
             for _, craft in pairs(LeoAltholic.craftResearch) do
-                if LeoTrainer.isTrackingSkill(char.bio.name, craft) and LeoTrainer.canFillSlotWithSkill(char.bio.name, craft) then
+                if LeoTrainer.isTrackingSkill(charId, craft) and LeoTrainer.canFillSlotWithSkill(charId, craft) then
                     local styleId
                     local maxSlots = (char.research and char.research.done and char.research.done[craft] and char.research.done[craft].max) or 0
                     local openSlots = maxSlots - getNumOngoingResearches(char.research, craft)
 
                     for _ = 1, openSlots do
-                        for j, lineData in ipairs(lineList[char.bio.name][craft]) do
+                        for j, lineData in ipairs(lineList[charId][craft]) do
                             if not lineData.added and not lineData.isResearching then
-                                local trait, knownList = getFirstUnknownTraitCanBeTrained(craft, lineData.line, lineData.unknownTraits, trainer)
+                                local trait, knownList = getFirstUnknownTraitCanBeTrained(craft, lineData.line, lineData.unknownTraits, trainerId)
                                 if trait ~= nil and (trait ~= 9 or LeoTrainer.data.trainNirnhoned == true) then
                                     local hasItem = false
                                     for itemIndex, itemData in pairs(items) do
@@ -614,15 +626,15 @@ function LeoTrainer.FillSlots(trainer, trainee)
                                         end
                                     end
 
-                                    if not hasItem and not LeoTrainer.IsQueuedForTrainee(char.bio.name, craft, lineData.line, trait) then
+                                    if not hasItem and not LeoTrainer.IsQueuedForTrainee(charId, craft, lineData.line, trait) then
                                         local traitType = GetSmithingResearchLineTraitInfo(craft, lineData.line, trait)
                                         local traitName = GetString('SI_ITEMTRAITTYPE', traitType)
                                         if not styleId then styleId = LeoTrainer.craft.MaxStyle(lineData.line) end
-                                        local trainerName = trainer or selectTrainerForKnownList(knownList, LeoTrainer.settings.defaultTrainer)
+                                        local selectedTrainerId = trainerId or selectTrainerForKnownList(knownList, LeoTrainer.settings.defaultTrainer)
 
                                         local data = {
-                                            trainer = trainerName,
-                                            trainee = char.bio.name,
+                                            trainer = selectedTrainerId,
+                                            trainee = charId,
                                             craft = craft,
                                             line = lineData.line,
                                             trait = trait,
@@ -639,7 +651,7 @@ function LeoTrainer.FillSlots(trainer, trainee)
                                         }
                                         LeoTrainer.AddToQueue(data)
                                     end
-                                    lineList[char.bio.name][craft][j].added = true
+                                    lineList[charId][craft][j].added = true
                                     break
                                 end
                             end
