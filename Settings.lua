@@ -291,7 +291,7 @@ function LeoTrainer_SettingsMenu:AddCharacters()
     end
 end
 
-function LeoTrainer_SettingsMenu_OnMouseEnter(control, tooltip)
+function LeoTrainer.SettingsMenu_OnMouseEnter(control, tooltip)
     InitializeTooltip(InformationTooltip, control, BOTTOMLEFT, 0, -2, TOPLEFT)
     SetTooltipText(InformationTooltip, tooltip)
 end

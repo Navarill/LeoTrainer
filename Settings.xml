@@ -11,62 +11,62 @@
 						<Label name="$(parent)ST_Label" text="Allow training" font="ZoFontWinH4" wrapMode="ELLIPSIS" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="10"/>
 							<Dimensions x="180" y="26"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, "Enable this skill line for characters participating in trait training (both Trainer and Trainees).")</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, "Enable this skill line for characters participating in trait training (both Trainer and Trainees).")</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Label>
 						<Texture name="$(parent)ST_1" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_blacksmithing_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetY="30"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_BLACKSMITHING)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_BLACKSMITHING)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 						<Texture name="$(parent)ST_2" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_clothing_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)ST_1" relativePoint="RIGHT" offsetX="-4"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_CLOTHIER)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_CLOTHIER)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 						<Texture name="$(parent)ST_6" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_woodworking_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)ST_2" relativePoint="RIGHT" offsetX="-4"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_WOODWORKING)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_WOODWORKING)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 						<Texture name="$(parent)ST_7" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_jewelrycrafting_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)ST_6" relativePoint="RIGHT" offsetX="-4"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_JEWELRYCRAFTING)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_JEWELRYCRAFTING)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 
 						<Label name="$(parent)FS_Label" text="Fill empty slots" font="ZoFontWinH4" wrapMode="ELLIPSIS" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="200"/>
 							<Dimensions x="290" y="26"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, "Queue missing traits automatically when clicking 'Fill all slots' if this character has open research slots.")</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, "Queue missing traits automatically when clicking 'Fill all slots' if this character has open research slots.")</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Label>
 						<Texture name="$(parent)FS_1" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_blacksmithing_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)" relativePoint="LEFT" offsetX="190" offsetY="30"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_BLACKSMITHING)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_BLACKSMITHING)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 						<Texture name="$(parent)FS_2" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_clothing_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)FS_1" relativePoint="RIGHT" offsetX="-4"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_CLOTHIER)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_CLOTHIER)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 						<Texture name="$(parent)FS_6" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_woodworking_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)FS_2" relativePoint="RIGHT" offsetX="-4"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_WOODWORKING)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_WOODWORKING)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 						<Texture name="$(parent)FS_7" textureFile="esoui/art/inventory/inventory_tabicon_craftbag_jewelrycrafting_up.dds" mouseEnabled="true">
 							<Anchor point="LEFT" relativeTo="$(parent)FS_6" relativePoint="RIGHT" offsetX="-4"/>
 							<Dimensions x="36" y="36"/>
-							<OnMouseEnter>LeoTrainer_SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_JEWELRYCRAFTING)))</OnMouseEnter>
+							<OnMouseEnter>LeoTrainer.SettingsMenu_OnMouseEnter(self, zo_strformat(SI_ABILITY_NAME, ZO_GetCraftingSkillName(CRAFTING_TYPE_JEWELRYCRAFTING)))</OnMouseEnter>
 							<OnMouseExit>ZO_Options_OnMouseExit(self)</OnMouseExit>
 						</Texture>
 					</Controls>

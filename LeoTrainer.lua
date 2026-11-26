@@ -70,7 +70,11 @@ function LeoTrainer.continueAtStation(craftSkill)
     end
 end
 
-function LeoTrainer.stationEnter(craftSkill)
+function LeoTrainer.stationEnter(craftSkill, sameStation)
+    if sameStation then
+        return
+    end
+
     if not LeoTrainer.IsInUsableStation() then
         LeoTrainer.craft.TryWritCreator(craftSkill)
         return

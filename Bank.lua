@@ -21,19 +21,33 @@ local function FindNextFreeBankSlot()
     return nil, nil
 end
 
-local function ProcessNextDeposit()
+local function StopDepositQueue()
+    depositQueue = {}
+    isDepositing = false
+    EVENT_MANAGER:UnregisterForUpdate(EVENT_NAMESPACE .. "DepositTick")
+    EVENT_MANAGER:UnregisterForEvent(EVENT_NAMESPACE, EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
+end
+
+local ProcessNextDeposit
+
+local function OnBankSlotUpdated(_, bagId, slotId)
+    if bagId ~= BAG_BANK and bagId ~= BAG_SUBSCRIBER_BANK then
+        return
+    end
+    EVENT_MANAGER:UnregisterForUpdate(EVENT_NAMESPACE .. "DepositTick")
+    zo_callLater(ProcessNextDeposit, 50)
+end
+
+ProcessNextDeposit = function()
     if #depositQueue == 0 then
-        isDepositing = false
-        EVENT_MANAGER:UnregisterForUpdate(EVENT_NAMESPACE .. "DepositTick")
+        StopDepositQueue()
         return
     end
 
     local destBag, destSlot = FindNextFreeBankSlot()
     if not destBag or not destSlot then
         LeoTrainer.log("Bank is full, stopping auto-deposit.")
-        depositQueue = {}
-        isDepositing = false
-        EVENT_MANAGER:UnregisterForUpdate(EVENT_NAMESPACE .. "DepositTick")
+        StopDepositQueue()
         return
     end
 
@@ -44,11 +58,15 @@ local function ProcessNextDeposit()
 
     local itemId = GetItemId(entry.sourceBag, entry.sourceSlot)
     if itemId == 0 then
+        ProcessNextDeposit()
         return
     end
 
     local itemLink = GetItemLink(entry.sourceBag, entry.sourceSlot, LINK_STYLE_BRACKETS)
     LeoTrainer.log("Depositing " .. itemLink)
+
+    -- Fallback timer in case a move is blocked and never fires a slot update
+    EVENT_MANAGER:RegisterForUpdate(EVENT_NAMESPACE .. "DepositTick", 600, ProcessNextDeposit)
 
     if IsProtectedFunction("RequestMoveItem") then
         CallSecureProtected("RequestMoveItem", entry.sourceBag, entry.sourceSlot, destBag, destSlot, entry.stackCount)
@@ -66,19 +84,12 @@ function Bank.StartDepositQueue(items)
 
     if not isDepositing then
         isDepositing = true
-        EVENT_MANAGER:RegisterForUpdate(EVENT_NAMESPACE .. "DepositTick", 150, ProcessNextDeposit)
+        EVENT_MANAGER:RegisterForEvent(EVENT_NAMESPACE, EVENT_INVENTORY_SINGLE_SLOT_UPDATE, OnBankSlotUpdated)
+        ProcessNextDeposit()
     end
 end
 
-function Bank.OnOpenBank(_, bankBag)
-    if bankBag ~= BAG_BANK then
-        return
-    end
-
-    if not LeoTrainer.settings or not LeoTrainer.settings.bank or not LeoTrainer.settings.bank.autoDeposit then
-        return
-    end
-
+local function ScanAndQueueBackpack()
     if not LeoTrainer.research then return end
 
     local items = {}
@@ -106,10 +117,21 @@ function Bank.OnOpenBank(_, bankBag)
     end
 end
 
+function Bank.OnOpenBank(_, bankBag)
+    if bankBag ~= BAG_BANK then
+        return
+    end
+
+    if not LeoTrainer.settings or not LeoTrainer.settings.bank or not LeoTrainer.settings.bank.autoDeposit then
+        return
+    end
+
+    -- Brief delay lets PA Banking and FCOIS finish their bank-open hooks first
+    zo_callLater(ScanAndQueueBackpack, 300)
+end
+
 function Bank.OnCloseBank()
-    depositQueue = {}
-    isDepositing = false
-    EVENT_MANAGER:UnregisterForUpdate(EVENT_NAMESPACE .. "DepositTick")
+    StopDepositQueue()
 end
 
 function Bank.Initialize()

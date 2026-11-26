@@ -121,11 +121,19 @@ local function addItemToLLC(queueIndex, data)
     return true
 end
 
+local function isTrainerMatch(trainer, currentCharId)
+    if trainer == "Anyone" then return true end
+    local currentIdStr = tostring(currentCharId)
+    if tostring(trainer) == currentIdStr then return true end
+    local char = LeoAltholic.GetCharByName and LeoAltholic.GetCharByName(trainer)
+    return char and char.bio and tostring(char.bio.id) == currentIdStr or false
+end
+
 local function addItemsToLLC()
     local craftSkill = GetCraftingInteractionType()
     local currentCharId = GetCurrentCharacterId()
     for index, data in ipairs(LeoTrainer.data.craftQueue) do
-        local canTrainerCraft = (data.trainer == "Anyone" or LeoTrainer.GetCharIdByName(data.trainer) == currentCharId)
+        local canTrainerCraft = isTrainerMatch(data.trainer, currentCharId)
         if not data.crafted and canTrainerCraft and data.craft == craftSkill and LeoAltholic.CharKnowsTrait(data.craft, data.line, data.trait) == true then
             if addItemToLLC(index, data) then Craft.isCrafting = true end
         end
@@ -147,7 +155,7 @@ end
 function Craft.StillHaveCraftToDo(craftSkill)
     local currentCharId = GetCurrentCharacterId()
     for _, data in pairs(LeoTrainer.data.craftQueue) do
-        local canTrainerCraft = (data.trainer == "Anyone" or LeoTrainer.GetCharIdByName(data.trainer) == currentCharId)
+        local canTrainerCraft = isTrainerMatch(data.trainer, currentCharId)
         if canTrainerCraft and data.craft == craftSkill and not data.crafted then return true end
     end
 
