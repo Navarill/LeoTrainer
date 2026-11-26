@@ -232,7 +232,7 @@ function LeoTrainerQueueList:FilterScrollList()
         if station > 0 and data.craft ~= station then
             canShow = false
         end
-        if station > 0 and data.trainer ~= "Anyone" and LeoTrainer.GetCharIdByName(data.trainer) ~= currentCharId then
+        if station > 0 and data.trainer ~= "Anyone" and data.trainer ~= currentCharId then
             canShow = false
         end
 
@@ -271,11 +271,10 @@ local function getFirstUnknownTraitCanBeTrained(craft, line, unknownTraits, trai
     return nil, {}
 end
 
-local function selectTrainerForKnownList(knownList, preferredTrainer)
-    if preferredTrainer and preferredTrainer ~= "Anyone" then
-        local preferredId = LeoTrainer.GetCharIdByName(preferredTrainer)
+local function selectTrainerForKnownList(knownList, preferredTrainerId)
+    if preferredTrainerId and preferredTrainerId ~= "Anyone" then
         for _, knownId in pairs(knownList) do
-            if knownId == preferredId then
+            if knownId == preferredTrainerId then
                 return knownId
             end
         end
@@ -362,8 +361,6 @@ end
 function LeoTrainer.ui.UpdateUI(charId)
     if charId == nil then
         charId = GetCurrentCharacterId()
-    else
-        charId = LeoTrainer.GetCharIdByName(charId)
     end
 
     LeoTrainer.research.Initialize()
@@ -553,9 +550,8 @@ function LeoTrainer.ClearQueue()
 end
 
 function LeoTrainer.IsQueuedForTrainee(traineeId, craft, line, trait)
-    traineeId = LeoTrainer.GetCharIdByName(traineeId)
     for _, item in pairs(LeoTrainer.GetCraftQueue()) do
-        if not item.crafted and LeoTrainer.GetCharIdByName(item.trainee) == traineeId and item.craft == craft and item.line == line and item.trait == trait then
+        if not item.crafted and item.trainee == traineeId and item.craft == craft and item.line == line and item.trait == trait then
             return true
         end
     end
@@ -585,10 +581,7 @@ function LeoTrainer.FillKnownSlots()
     LeoTrainer.FillSlots(GetCurrentCharacterId(), nil)
 end
 
-function LeoTrainer.FillSlots(trainer, trainee)
-    local trainerId = trainer and LeoTrainer.GetCharIdByName(trainer) or nil
-    local traineeId = trainee and LeoTrainer.GetCharIdByName(trainee) or nil
-
+function LeoTrainer.FillSlots(trainerId, traineeId)
     LeoTrainer.research.Initialize()
     local lineList = LeoTrainer.GetPriorityLineList()
     local charList = LeoAltholic.ExportCharacters()
