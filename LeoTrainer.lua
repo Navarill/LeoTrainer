@@ -71,10 +71,7 @@ function LeoTrainer.continueAtStation(craftSkill)
 end
 
 function LeoTrainer.stationEnter(craftSkill, sameStation)
-    if sameStation then
-        return
-    end
-
+    if sameStation then return end
     if not LeoTrainer.IsInUsableStation() then
         LeoTrainer.craft.TryWritCreator(craftSkill)
         return
@@ -89,6 +86,18 @@ function LeoTrainer.stationEnter(craftSkill, sameStation)
     LeoTrainer.stage = LEOTRAINER_STAGE_RESEARCH
 
     LeoTrainer.continueAtStation(craftSkill)
+end
+
+function LeoTrainer.setTrackingSkill(charId, craftSkill, value)
+    if not charId then return end
+    LeoTrainer.data.trackedTraits[charId] = LeoTrainer.data.trackedTraits[charId] or {}
+    LeoTrainer.data.trackedTraits[charId][craftSkill] = value
+end
+
+function LeoTrainer.setFillSlotWithSkill(charId, craftSkill, value)
+    if not charId then return end
+    LeoTrainer.data.fillSlot[charId] = LeoTrainer.data.fillSlot[charId] or {}
+    LeoTrainer.data.fillSlot[charId][craftSkill] = value
 end
 
 function LeoTrainer.stationExit(_, craftSkill)
@@ -517,7 +526,9 @@ local function finishStartup()
     end
     EVENT_MANAGER:UnregisterForEvent("LibLazyCrafting", EVENT_CRAFTING_STATION_INTERACT)
 
-    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFTING_STATION_INTERACT, function(_, ...) LeoTrainer.stationEnter(...) end)
+    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFTING_STATION_INTERACT, function(_, craftSkill, sameStation)
+        LeoTrainer.stationEnter(craftSkill, sameStation)
+    end)
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_END_CRAFTING_STATION_INTERACT, LeoTrainer.stationExit)
     CALLBACK_MANAGER:RegisterCallback("LAM-PanelControlsCreated", function(panel) LeoTrainer.settingsMenu:OnSettingsControlsCreated(panel) end)
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, onNewMovementInUIMode)

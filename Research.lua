@@ -296,27 +296,30 @@ function Research.ResearchNext(craftSkill)
     end
 
     if lineList == nil then lineList = LeoTrainer.GetPriorityLineList(myId, craftSkill) end
-    for i, lineData in ipairs(lineList[myId][craftSkill]) do
-        if not lineData.added and not lineData.isResearching then
-            for j, data in pairs(Research.queue) do
-                if lineData.line == data.line then
-                    lineList[myId][craftSkill][i].added = true
-                    local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
-                    local traitType = GetItemLinkTraitInfo(itemLink)
-                    local traitName = GetString("SI_ITEMTRAITTYPE", traitType)
-                    local message = zo_strformat("<<1>> <<2>> (<<3>>)",
-                        GetString(SI_GAMEPAD_SMITHING_CURRENT_RESEARCH_HEADER),
-                        itemLink,
-                        traitName)
-                    LeoTrainer.log(message)
+    local charLines = lineList and lineList[myId] and lineList[myId][craftSkill]
+    if charLines then
+        for i, lineData in ipairs(charLines) do
+            if not lineData.added and not lineData.isResearching then
+                for j, data in pairs(Research.queue) do
+                    if lineData.line == data.line then
+                        charLines[i].added = true
+                        local itemLink = GetItemLink(data.bagId, data.slotIndex, LINK_STYLE_BRACKETS)
+                        local traitType = GetItemLinkTraitInfo(itemLink)
+                        local traitName = GetString("SI_ITEMTRAITTYPE", traitType)
+                        local message = zo_strformat("<<1>> <<2>> (<<3>>)",
+                            GetString(SI_GAMEPAD_SMITHING_CURRENT_RESEARCH_HEADER),
+                            itemLink,
+                            traitName)
+                        LeoTrainer.log(message)
 
-                    EVENT_MANAGER:RegisterForUpdate(LeoTrainer.name .. ".ResearchTimeout", 2000, OnResearchTimeout(craftSkill))
-                    EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED, Research.OnResearchComplete)
+                        EVENT_MANAGER:RegisterForUpdate(LeoTrainer.name .. ".ResearchTimeout", 2000, OnResearchTimeout(craftSkill))
+                        EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFT_COMPLETED, Research.OnResearchComplete)
 
-                    Research.isResearching = true
-                    Research.queue[j].isResearching = true
-                    ResearchSmithingTrait(data.bagId, data.slotIndex)
-                    return
+                        Research.isResearching = true
+                        Research.queue[j].isResearching = true
+                        ResearchSmithingTrait(data.bagId, data.slotIndex)
+                        return
+                    end
                 end
             end
         end

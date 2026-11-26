@@ -85,7 +85,13 @@ end
 local function addItemToLLC(queueIndex, data)
     LeoTrainer.log("Crafting " .. data.itemLink .. " (" .. data.researchName .. ") ...")
 
-    data.patternIndex = Craft.namesToPatternIndexes[data.craft]["lines"][data.line]
+    local craftLines = Craft.namesToPatternIndexes and Craft.namesToPatternIndexes[data.craft] and Craft.namesToPatternIndexes[data.craft]["lines"]
+    local patternIndex = craftLines and craftLines[data.line]
+    if not patternIndex then
+        LeoTrainer.debug("Missing pattern mapping for craft " .. tostring(data.craft) .. " line " .. tostring(data.line))
+        return false
+    end
+    data.patternIndex = patternIndex
 
     local matName, _, matReq = GetSmithingPatternMaterialItemInfo(data.patternIndex, data.materialIndex)
     data.materialQuantity = matReq
@@ -141,7 +147,7 @@ local function addItemsToLLC()
     if Craft.isCrafting == true then return end
 
     LeoTrainer.debug("Nothing more to craft at this station.")
-    LeoTrainer.isCrafting = false
+    Craft.isCrafting = false
 end
 
 function Craft.TryWritCreator(craftSkill)
