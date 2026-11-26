@@ -319,6 +319,99 @@ function LeoTrainer.setFillSlotWithSkill(charId, craftId, tracking)
     LeoTrainer.data.fillSlot[charId][craftId] = tracking
 end
 
+local function copyLegacyTable(source, target)
+    if type(source) ~= "table" or type(target) ~= "table" then return end
+    for k, v in pairs(source) do
+        if k ~= "version" and k ~= "$LastCharacterName" then
+            if type(v) == "table" and type(target[k]) == "table" then
+                copyLegacyTable(v, target[k])
+            else
+                target[k] = ZO_DeepTableCopy(v)
+            end
+        end
+    end
+end
+
+local function migrateLegacySavedVars(worldName)
+    if LeoTrainer.data.migratedFromLegacy then return end
+
+    local displayName = GetDisplayName()
+    local currentCharId = GetCurrentCharacterId()
+
+    -- 1. Migrate from upstream LibSavedVars structure if present
+    local legacySettingsRoot = LeoTrainer_Settings and LeoTrainer_Settings["Default"] and LeoTrainer_Settings["Default"][displayName]
+    if legacySettingsRoot then
+        local legacyAccount = legacySettingsRoot["$AccountWide"] or legacySettingsRoot["Account"]
+        local legacyChar = legacySettingsRoot["Characters"] and legacySettingsRoot["Characters"][currentCharId]
+        if legacyChar and legacyChar.accountWide == false then
+            LeoTrainer.settingsControl.accountWide = false
+            LeoTrainer.settings = ZO_SavedVars:NewCharacterIdSettings("LeoTrainer_Settings", 1, nil, LeoTrainer.settingsDefaults, worldName)
+            copyLegacyTable(legacyChar, LeoTrainer.settings)
+        elseif legacyAccount then
+            copyLegacyTable(legacyAccount, LeoTrainer.settings)
+        end
+    end
+
+    local legacyDataRoot = LeoTrainer_Data and LeoTrainer_Data["Default"] and LeoTrainer_Data["Default"][displayName]
+    if legacyDataRoot and legacyDataRoot["$AccountWide"] then
+        copyLegacyTable(legacyDataRoot["$AccountWide"], LeoTrainer.data)
+    end
+
+    -- 2. Convert any legacy character-name keys in trackedTraits, fillSlot, defaultTrainer, and craftQueue to charId (id64)
+    local nameToId = {}
+    for i = 1, GetNumCharacters() do
+        local rawName, _, _, _, _, _, charId = GetCharacterInfo(i)
+        if charId and charId ~= "" then
+            local cleanName = zo_strformat("<<1>>", rawName)
+            nameToId[cleanName] = charId
+        end
+    end
+
+    local function migrateCharKeys(tbl)
+        if type(tbl) ~= "table" then return end
+        local pending = {}
+        for key, value in pairs(tbl) do
+            local resolvedId = nameToId[key]
+            if resolvedId and resolvedId ~= key then
+                table.insert(pending, { oldKey = key, newId = resolvedId, value = value })
+            end
+        end
+        for _, entry in ipairs(pending) do
+            if tbl[entry.newId] == nil then
+                tbl[entry.newId] = entry.value
+            end
+            tbl[entry.oldKey] = nil
+        end
+    end
+
+    migrateCharKeys(LeoTrainer.data.trackedTraits)
+    migrateCharKeys(LeoTrainer.data.fillSlot)
+
+    if LeoTrainer.settings.defaultTrainer and nameToId[LeoTrainer.settings.defaultTrainer] then
+        LeoTrainer.settings.defaultTrainer = nameToId[LeoTrainer.settings.defaultTrainer]
+    end
+
+    if LeoTrainer.data.craftQueue then
+        for _, item in pairs(LeoTrainer.data.craftQueue) do
+            if item.trainer and nameToId[item.trainer] then
+                item.trainer = nameToId[item.trainer]
+            end
+            if item.trainee and nameToId[item.trainee] then
+                item.trainee = nameToId[item.trainee]
+            end
+            if item.knownList then
+                for idx, trainerKey in ipairs(item.knownList) do
+                    if nameToId[trainerKey] then
+                        item.knownList[idx] = nameToId[trainerKey]
+                    end
+                end
+            end
+        end
+    end
+
+    LeoTrainer.data.migratedFromLegacy = true
+end
+
 function LeoTrainer.InitSavedVars()
     local worldName = GetWorldName()
 
@@ -331,6 +424,8 @@ function LeoTrainer.InitSavedVars()
     end
 
     LeoTrainer.data = ZO_SavedVars:NewAccountWide("LeoTrainer_Data", 1, nil, LeoTrainer.dataDefaults, worldName)
+
+    migrateLegacySavedVars(worldName)
 
     LeoTrainer.settings.loaded = true
     LeoTrainer.data.loaded = true
