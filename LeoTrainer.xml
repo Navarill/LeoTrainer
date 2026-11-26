@@ -39,7 +39,7 @@
                 <Button name="$(parent)FeedbackButton" clickSound="Click">
                     <Anchor point="TOPRIGHT" relativePoint="TOPLEFT" relativeTo="$(parent)Close" offsetX="-5" />
                     <Dimensions x="40" y="40"/>
-                    <OnMouseEnter>ZO_Tooltips_ShowTextTooltip(self, TOP, 'Research')</OnMouseEnter>
+                    <OnMouseEnter>ZO_Tooltips_ShowTextTooltip(self, TOP, 'Feedback')</OnMouseEnter>
                     <OnMouseExit>ZO_Tooltips_HideTextTooltip()</OnMouseExit>
                     <Controls>
                         <Backdrop name="$(parent)BG" centerColor="101010" edgeColor="202020">
@@ -727,7 +727,7 @@
 
                 <Backdrop name="$(parent)IconDesc" tier="1" centerColor="000000" edgeColor="202020">
                     <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$(parent)Craft1Panel" offsetX="0" offsetY="2"/>
-                    <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$(parent)Craft1Panel" offsetX="" offsetY="40"/>
+                    <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$(parent)Craft1Panel" offsetY="40"/>
                     <Edge edgeSize="1"/>
                     <Controls>
                         <Texture name="$(parent)Icon1" color="00FF00" textureFile="esoui/art/buttons/accept_up.dds">
@@ -748,7 +748,7 @@
                             <Dimensions x="180" y="28"/>
                         </Label>
 
-                        <Texture name="$(parent)Icon3" color="FFFFFFF" textureFile="esoui/art/buttons/pointsplus_up.dds">
+                        <Texture name="$(parent)Icon3" color="FFFFFF" textureFile="esoui/art/buttons/pointsplus_up.dds">
                             <Dimensions y="25" x="25"/>
                             <Anchor point="TOPLEFT" relativeTo="$(parent)Icon2Label" relativePoint="TOPRIGHT" offsetX="6"/>
                         </Texture>
@@ -779,7 +779,7 @@
 
                 <Backdrop name="$(parent)QueuePanel" tier="1" centerColor="000000" edgeColor="202020" clampedToScreen="true" movable="false" mouseEnabled="true">
                     <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeTo="$(parent)IconDesc" offsetX="0" offsetY="2"/>
-                    <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$(parent)IconDesc" offsetX="" offsetY="400"/>
+                    <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" relativeTo="$(parent)IconDesc" offsetY="400"/>
                     <Edge edgeSize="1"/>
                     <Controls>
                         <Control name="$(parent)QueueScroll" inheritAlpha="true">
@@ -813,7 +813,7 @@
                                             <Anchor point="TOPLEFT" relativeTo="$(parent)Trait" relativePoint="TOPRIGHT" offsetX="10" />
                                             <Dimensions x="200" y="20" />
                                             <OnInitialized>
-                                                ZO_SortHeader_Initialize(self, "Item", "item", ZO_SORT_ORDER_DOWN, TEXT_ALIGN_LEFT, "ZoFontGameLargeBold")
+                                                ZO_SortHeader_Initialize(self, "Item", "itemLink", ZO_SORT_ORDER_DOWN, TEXT_ALIGN_LEFT, "ZoFontGameLargeBold")
                                             </OnInitialized>
                                         </Control>
                                     </Controls>

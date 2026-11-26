@@ -519,7 +519,7 @@ local function finishStartup()
 
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_CRAFTING_STATION_INTERACT, function(_, ...) LeoTrainer.stationEnter(...) end)
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_END_CRAFTING_STATION_INTERACT, LeoTrainer.stationExit)
-    CALLBACK_MANAGER:RegisterCallback("LAM-PanelControlsCreated", function(panel) LeoTrainer_SettingsMenu:OnSettingsControlsCreated(panel) end)
+    CALLBACK_MANAGER:RegisterCallback("LAM-PanelControlsCreated", function(panel) LeoTrainer.settingsMenu:OnSettingsControlsCreated(panel) end)
     EVENT_MANAGER:RegisterForEvent(LeoTrainer.name, EVENT_NEW_MOVEMENT_IN_UI_MODE, onNewMovementInUIMode)
     CHAMPION_PERKS_SCENE:RegisterCallback('StateChange', onChampionPerksSceneStateChange)
 

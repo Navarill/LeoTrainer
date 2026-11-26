@@ -1,18 +1,18 @@
 LeoTrainer.craftNames = { "Blacksmith", "Clothing", "Woodworking", "Jewelry" }
 
-LeoTrainer_SettingsMenu = ZO_Object:Subclass()
+LeoTrainer.SettingsMenu = ZO_Object:Subclass()
 local LAM = LibAddonMenu2
 
-function LeoTrainer_SettingsMenu:New(...)
+function LeoTrainer.SettingsMenu:New(...)
     local object = ZO_Object.New(self)
     object:Initialize(...)
     return object
 end
 
-function LeoTrainer_SettingsMenu:Initialize()
+function LeoTrainer.SettingsMenu:Initialize()
 end
 
-function LeoTrainer_SettingsMenu:SelectAll(craftSkill)
+function LeoTrainer.SettingsMenu:SelectAll(craftSkill)
     for _, char in ipairs(LeoAltholic.GetCharacters()) do
         local charId = LeoTrainer.GetCharacterId(char)
         if craftSkill ~= nil then
@@ -28,7 +28,7 @@ function LeoTrainer_SettingsMenu:SelectAll(craftSkill)
     ReloadUI()
 end
 
-function LeoTrainer_SettingsMenu:DeselectAll(craftSkill)
+function LeoTrainer.SettingsMenu:DeselectAll(craftSkill)
     for _, char in ipairs(LeoAltholic.GetCharacters()) do
         local charId = LeoTrainer.GetCharacterId(char)
         if craftSkill ~= nil then
@@ -53,7 +53,7 @@ for quality = ITEM_FUNCTIONAL_QUALITY_MIN_VALUE, ITEM_FUNCTIONAL_QUALITY_MAX_VAL
     table.insert(qualityChoices, qualityString)
 end
 
-function LeoTrainer_SettingsMenu:CreatePanel()
+function LeoTrainer.SettingsMenu:CreatePanel()
     local OptionsName = "LeoTrainerOptions"
     local panelData = {
         type = "panel",
@@ -264,13 +264,13 @@ function LeoTrainer_SettingsMenu:CreatePanel()
         }, {
             type = "button",
             name = "Select all",
-            func = function() LeoTrainer_SettingsMenu:SelectAll() end,
+            func = function() LeoTrainer.SettingsMenu:SelectAll() end,
             warning = "Will need to reload the UI.",
             width = "half",
         }, {
             type = "button",
             name = "Deselect all",
-            func = function() LeoTrainer_SettingsMenu:DeselectAll() end,
+            func = function() LeoTrainer.SettingsMenu:DeselectAll() end,
             warning = "Will need to reload the UI.",
             width = "half",
         }, {
@@ -281,7 +281,7 @@ function LeoTrainer_SettingsMenu:CreatePanel()
     LAM:RegisterOptionControls(OptionsName, optionsData)
 end
 
-function LeoTrainer_SettingsMenu:AddCharacters()
+function LeoTrainer.SettingsMenu:AddCharacters()
     if LeoTrainerOptionsCharactersSection then return end
     local control = CreateControlFromVirtual("$(parent)", LeoTrainerOptionsCharacters, "LeoTrainer_SettingsCharacters", "Section")
     self.container = control:GetNamedChild("Container")
@@ -306,7 +306,7 @@ local function ToggleFill(checkbox, checked)
     LeoTrainer.setFillSlotWithSkill(control.data.charId, checkbox.data.craftId, checked)
 end
 
-function LeoTrainer_SettingsMenu:AddCharacter(id, char, last)
+function LeoTrainer.SettingsMenu:AddCharacter(id, char, last)
     local charId = LeoTrainer.GetCharacterId(char)
     local control = CreateControlFromVirtual("$(parent)", self.container, "LeoTrainer_SettingsCharacter", id)
     if last then
@@ -339,7 +339,7 @@ function LeoTrainer_SettingsMenu:AddCharacter(id, char, last)
     return control
 end
 
-function LeoTrainer_SettingsMenu:ClearCharacter(id)
+function LeoTrainer.SettingsMenu:ClearCharacter(id)
     if self.container then
         local control = self.container:GetNamedChild(id)
         if control then
@@ -348,12 +348,12 @@ function LeoTrainer_SettingsMenu:ClearCharacter(id)
     end
 end
 
-function LeoTrainer_SettingsMenu:OnSettingsControlsCreated(panel)
+function LeoTrainer.SettingsMenu:OnSettingsControlsCreated(panel)
     if panel:GetName() == "LeoTrainerOptions" then
         self:AddCharacters()
     end
 end
 
-function LeoTrainer_SettingsMenu:IsCreated()
+function LeoTrainer.SettingsMenu:IsCreated()
     return self.container ~= nil
 end

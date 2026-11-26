@@ -35,7 +35,7 @@ function LeoTrainer.ui:OnShow(control, hidden)
 end
 
 function LeoTrainer.ui:isHidden()
-    return LeoTrainer.ui.hidden
+    return LeoTrainer.hidden
 end
 
 function LeoTrainer.ui.RestorePosition()
@@ -102,10 +102,10 @@ function LeoTrainer.ui.Initialize()
 
     LeoTrainerWindowTitle:SetText(LeoTrainer.displayName .. " v" .. LeoTrainer.version)
 
-    LeoTrainer.settingsMenu = LeoTrainer_SettingsMenu:New()
+    LeoTrainer.settingsMenu = LeoTrainer.SettingsMenu:New()
     LeoTrainer.settingsMenu:CreatePanel()
 
-    LeoTrainer.launcher = LeoTrainer_Launcher:New()
+    LeoTrainer.launcher = LeoTrainer.Launcher:New()
     LeoTrainer.launcher:SetHidden(false)
 
     LeoTrainer.ui.RestorePosition()
@@ -118,31 +118,32 @@ local function copy(obj)
     return ZO_ShallowTableCopy(obj)
 end
 
-LeoTrainerQueueList = ZO_SortFilterList:Subclass()
-function LeoTrainerQueueList:New(control)
-    ZO_SortFilterList.InitializeSortFilterList(self, control)
+LeoTrainer.QueueList = ZO_SortFilterList:Subclass()
+function LeoTrainer.QueueList:New(control)
+    local object = ZO_Object.New(self)
+    ZO_SortFilterList.InitializeSortFilterList(object, control)
 
     local sorterKeys =
     {
         ["trainer"] = {},
         ["trainee"] = { tiebreaker = "trainer" },
         ["researchName"] = { tiebreaker = "trainee" },
-        ["item"] = { tiebreaker = "researchName" },
+        ["itemLink"] = { tiebreaker = "researchName" },
     }
 
-    self.masterList = {}
-    self.currentSortKey = "trainee"
-    self.currentSortOrder = ZO_SORT_ORDER_UP
-    ZO_ScrollList_AddDataType(self.list, 1, "LeoTrainerQueueListTemplate", 32, function(ctrl, data) self:SetupEntry(ctrl, data) end)
+    object.masterList = {}
+    object.currentSortKey = "trainee"
+    object.currentSortOrder = ZO_SORT_ORDER_UP
+    ZO_ScrollList_AddDataType(object.list, 1, "LeoTrainerQueueListTemplate", 32, function(ctrl, data) object:SetupEntry(ctrl, data) end)
 
-    self.sortFunction = function(listEntry1, listEntry2)
-        return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, self.currentSortKey, sorterKeys, self.currentSortOrder)
+    object.sortFunction = function(listEntry1, listEntry2)
+        return ZO_TableOrderingFunction(listEntry1.data, listEntry2.data, object.currentSortKey, sorterKeys, object.currentSortOrder)
     end
 
-    return self
+    return object
 end
 
-function LeoTrainerQueueList:SetupEntry(control, data)
+function LeoTrainer.QueueList:SetupEntry(control, data)
     control.data = data
 
     control.trainer = GetControl(control, "Trainer")
@@ -202,7 +203,7 @@ function LeoTrainerQueueList:SetupEntry(control, data)
     ZO_SortFilterList.SetupRow(self, control, data)
 end
 
-function LeoTrainerQueueList:BuildMasterList()
+function LeoTrainer.QueueList:BuildMasterList()
     self.masterList = {}
     local list = LeoTrainer.GetCraftQueue()
     if list then
@@ -214,12 +215,12 @@ function LeoTrainerQueueList:BuildMasterList()
     end
 end
 
-function LeoTrainerQueueList:SortScrollList()
+function LeoTrainer.QueueList:SortScrollList()
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     table.sort(scrollData, self.sortFunction)
 end
 
-function LeoTrainerQueueList:FilterScrollList()
+function LeoTrainer.QueueList:FilterScrollList()
     local scrollData = ZO_ScrollList_GetDataList(self.list)
     ZO_ClearNumericallyIndexedTable(scrollData)
 
@@ -331,7 +332,7 @@ function LeoTrainer.ui.CreateUI()
             label:SetFont("LeoTrainerLargeFont")
         end
     end
-    LeoTrainer.ui.queueScroll = LeoTrainerQueueList:New(LeoTrainerWindowQueuePanelQueueScroll)
+    LeoTrainer.ui.queueScroll = LeoTrainer.QueueList:New(LeoTrainerWindowQueuePanelQueueScroll)
     LeoTrainer.ui.queueScroll:RefreshData()
 
     local LeoTrainerCharDropdown = CreateControlFromVirtual('LeoTrainerCharDropdown', LeoTrainerWindow, 'LeoTrainerCharDropdown')
